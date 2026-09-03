@@ -14,7 +14,7 @@ const recipeSchema = new mongoose.Schema(
     steps: {
       type: [String],
       required: true,
-    },
+    },   
     category: {
       type: String,
       required: true,
@@ -22,12 +22,12 @@ const recipeSchema = new mongoose.Schema(
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "User", 
       required: true,
     },
   },
   {
-    timestamps: true,
+    timestamps: true,       
   }
 );
 
