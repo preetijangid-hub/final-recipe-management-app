@@ -10,7 +10,7 @@ const generateToken = (userId) => {
       expiresIn: process.env.JWT_EXPIRES_IN || "1d",
     }
   );
-};
+};  
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -28,7 +28,7 @@ const registerUser = async (req, res) => {
 
     const existingUser = await User.findOne({
       email: normalizedEmail,
-    });
+    });  
 
     if (existingUser) {
       return res.status(409).json({

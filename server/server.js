@@ -4,6 +4,11 @@ const cors = require("cors");
 
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+const recipeRoutes = require("./routes/recipeRoutes");
+const {
+  notFound,
+  errorHandler,
+} = require("./middleware/errorMiddleware");
 
 dotenv.config();
 
@@ -21,6 +26,10 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/recipes", recipeRoutes);
+
+app.use(notFound);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
