@@ -37,7 +37,7 @@ const seedDatabase = async () => {
 
     const adminPassword = await bcrypt.hash("Admin@12345", 12);
     const userPassword = await bcrypt.hash("User@12345", 12);
-
+    
     const admin = await User.create({
       name: "Recipe Admin",
       email: "admin@recipeapp.com",

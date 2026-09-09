@@ -1,0 +1,737 @@
+<div class="page">
+  <header class="navbar">
+    <div class="brand">
+      <span class="brand-icon">🍽️</span>
+
+      <div>
+        <h1>Savoré</h1>
+        <span>Recipe Collection</span>
+      </div>
+    </div>
+
+    <div class="user-section">
+      <div class="user-info">
+        <strong>
+          {{ currentUser?.name }}
+        </strong>
+
+        <span>
+          {{ currentUser?.role }}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        class="logout-btn"
+        (click)="logout()"
+      >
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <main class="content">
+    <section class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">
+          YOUR KITCHEN, YOUR RECIPES
+        </p>
+
+        <h2>
+          Discover something delicious.
+        </h2>
+
+        <p>
+          Explore your recipe collection and find
+          your next favorite dish.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="add-recipe-btn"
+        (click)="openAddModal()"
+      >
+        <span>+</span>
+        Add Recipe
+      </button>
+    </section>
+
+    @if (saveSuccess) {
+      <div class="success-message">
+        <span>✓</span>
+        {{ saveSuccess }}
+      </div>
+    }
+
+    @if (saveError && !showAddModal && !showEditModal) {
+      <div class="form-error page-error">
+        <span>!</span>
+        {{ saveError }}
+      </div>
+    }
+
+    <section class="filters">
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="search"
+          placeholder="Search recipes..."
+          (keyup.enter)="searchRecipes()"
+        />
+
+        <button
+          type="button"
+          (click)="searchRecipes()"
+        >
+          Search
+        </button>
+      </div>
+
+      <div class="filter-actions">
+        <input
+          type="text"
+          [(ngModel)]="category"
+          placeholder="Category"
+          (keyup.enter)="searchRecipes()"
+        />
+
+        <button
+          type="button"
+          class="secondary-btn"
+          (click)="searchRecipes()"
+        >
+          Filter
+        </button>
+
+        <button
+          type="button"
+          class="clear-btn"
+          (click)="clearFilters()"
+        >
+          Clear
+        </button>
+      </div>
+    </section>
+
+    @if (recipes$ | async; as data) {
+      @if (!loading && !errorMessage) {
+        @if (data.recipes.length > 0) {
+          <section class="recipe-grid">
+            @for (
+              recipe of data.recipes;
+              track recipe._id
+            ) {
+              <article class="recipe-card">
+
+                <div
+                  class="recipe-image"
+                  [routerLink]="[
+                    '/recipes',
+                    recipe._id
+                  ]"
+                >
+                  <span>🍴</span>
+                </div>
+
+                <div class="recipe-body">
+                  <div class="recipe-top">
+                    <span class="category">
+                      {{ recipe.category }}
+                    </span>
+                  </div>
+
+                  <h3>
+                    {{ recipe.title }}
+                  </h3>
+
+                  <p class="ingredients">
+                    {{ getIngredients(recipe) }}
+                  </p>
+
+                  <div class="recipe-meta">
+                    <span>
+                      🥕
+                      {{ recipe.ingredients.length }}
+                      ingredients
+                    </span>
+
+                    <span>
+                      📝
+                      {{ recipe.steps.length }}
+                      steps
+                    </span>
+                  </div>
+
+                  <div class="recipe-actions">
+                    <button
+                      type="button"
+                      class="view-btn"
+                      [routerLink]="[
+                        '/recipes',
+                        recipe._id
+                      ]"
+                    >
+                      View Recipe
+                    </button>
+
+                    @if (canManageRecipe(recipe)) {
+                      <button
+                        type="button"
+                        class="edit-btn"
+                        (click)="openEditModal(recipe)"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        class="delete-btn"
+                        [disabled]="
+                          deletingId === recipe._id
+                        "
+                        (click)="deleteRecipe(recipe)"
+                      >
+                        @if (
+                          deletingId === recipe._id
+                        ) {
+                          Deleting...
+                        } @else {
+                          Delete
+                        }
+                      </button>
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+          </section>
+
+          <section class="pagination">
+            <button
+              type="button"
+              [disabled]="currentPage === 1"
+              (click)="previousPage()"
+            >
+              ← Previous
+            </button>
+
+            <span>
+              Page
+              {{ data.pagination.page }}
+              of
+              {{ data.pagination.totalPages }}
+            </span>
+
+            <button
+              type="button"
+              [disabled]="
+                currentPage >=
+                data.pagination.totalPages
+              "
+              (click)="
+                nextPage(
+                  data.pagination.totalPages
+                )
+              "
+            >
+              Next →
+            </button>
+          </section>
+        } @else {
+          <div class="state-card">
+            <div class="state-icon">
+              🍽️
+            </div>
+
+            <h3>
+              No recipes found
+            </h3>
+
+            <p>
+              Try a different search or category.
+            </p>
+
+            <button
+              type="button"
+              (click)="clearFilters()"
+            >
+              View All Recipes
+            </button>
+          </div>
+        }
+      }
+    }
+
+    @if (loading) {
+      <div class="state-card loading-state">
+        <div class="spinner"></div>
+
+        <p>
+          Loading recipes...
+        </p>
+      </div>
+    }
+
+    @if (!loading && errorMessage) {
+      <div class="state-card error-state">
+        <div class="state-icon">
+          !
+        </div>
+
+        <h3>
+          Something went wrong
+        </h3>
+
+        <p>
+          {{ errorMessage }}
+        </p>
+
+        <button
+          type="button"
+          (click)="refreshRecipes()"
+        >
+          Try Again
+        </button>
+      </div>
+    }
+  </main>
+
+  <!-- ADD RECIPE MODAL -->
+
+  @if (showAddModal) {
+    <div
+      class="modal-backdrop"
+      (click)="closeAddModal()"
+    >
+      <section
+        class="recipe-modal"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="modal-header">
+          <div>
+            <span class="modal-eyebrow">
+              SAVORÉ COLLECTION
+            </span>
+
+            <h2>
+              Create a new recipe
+            </h2>
+
+            <p>
+              Add something delicious to your collection.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="close-btn"
+            [disabled]="saving"
+            (click)="closeAddModal()"
+          >
+            ×
+          </button>
+        </div>
+
+        <form
+          class="recipe-form"
+          (ngSubmit)="createRecipe()"
+        >
+          <div class="form-field">
+            <label for="recipe-title">
+              Recipe title
+            </label>
+
+            <input
+              id="recipe-title"
+              type="text"
+              [(ngModel)]="newRecipe.title"
+              name="title"
+              placeholder="e.g. Creamy Mushroom Pasta"
+              required
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="recipe-category">
+              Category
+            </label>
+
+            <input
+              id="recipe-category"
+              type="text"
+              [(ngModel)]="newRecipe.category"
+              name="category"
+              placeholder="e.g. Italian, Dessert, Breakfast"
+              required
+            />
+          </div>
+
+          <div class="dynamic-section">
+            <div class="section-title-row">
+              <div>
+                <label>
+                  Ingredients
+                </label>
+
+                <span>
+                  Add every ingredient needed.
+                </span>
+              </div>
+
+              <button
+                type="button"
+                class="add-small-btn"
+                (click)="addIngredient()"
+              >
+                + Add ingredient
+              </button>
+            </div>
+
+            <div class="dynamic-list">
+              @for (
+                ingredient of newRecipe.ingredients;
+                track $index
+              ) {
+                <div class="dynamic-row">
+                  <span class="row-number">
+                    {{ $index + 1 }}
+                  </span>
+
+                  <input
+                    type="text"
+                    [(ngModel)]="
+                      newRecipe.ingredients[$index]
+                    "
+                    [name]="'ingredient-' + $index"
+                    placeholder="e.g. 200g pasta"
+                  />
+
+                  <button
+                    type="button"
+                    class="remove-btn"
+                    [disabled]="
+                      newRecipe.ingredients.length === 1
+                    "
+                    (click)="
+                      removeIngredient($index)
+                    "
+                  >
+                    ×
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="dynamic-section">
+            <div class="section-title-row">
+              <div>
+                <label>
+                  Preparation steps
+                </label>
+
+                <span>
+                  Describe the cooking process step by step.
+                </span>
+              </div>
+
+              <button
+                type="button"
+                class="add-small-btn"
+                (click)="addStep()"
+              >
+                + Add step
+              </button>
+            </div>
+
+            <div class="dynamic-list">
+              @for (
+                step of newRecipe.steps;
+                track $index
+              ) {
+                <div class="dynamic-row">
+                  <span class="row-number">
+                    {{ $index + 1 }}
+                  </span>
+
+                  <textarea
+                    [(ngModel)]="
+                      newRecipe.steps[$index]
+                    "
+                    [name]="'step-' + $index"
+                    placeholder="Describe this preparation step..."
+                    rows="2"
+                  ></textarea>
+
+                  <button
+                    type="button"
+                    class="remove-btn"
+                    [disabled]="
+                      newRecipe.steps.length === 1
+                    "
+                    (click)="
+                      removeStep($index)
+                    "
+                  >
+                    ×
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+
+          @if (saveError) {
+            <div class="form-error">
+              <span>!</span>
+              {{ saveError }}
+            </div>
+          }
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="cancel-btn"
+              [disabled]="saving"
+              (click)="closeAddModal()"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              class="create-btn"
+              [disabled]="saving"
+            >
+              @if (saving) {
+                <span class="button-spinner"></span>
+                Creating...
+              } @else {
+                <span>+</span>
+                Create Recipe
+              }
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+
+  <!-- EDIT RECIPE MODAL -->
+
+  @if (showEditModal) {
+    <div
+      class="modal-backdrop"
+      (click)="closeEditModal()"
+    >
+      <section
+        class="recipe-modal"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="modal-header">
+          <div>
+            <span class="modal-eyebrow">
+              SAVORÉ COLLECTION
+            </span>
+
+            <h2>
+              Edit recipe
+            </h2>
+
+            <p>
+              Update the details of your recipe.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="close-btn"
+            [disabled]="saving"
+            (click)="closeEditModal()"
+          >
+            ×
+          </button>
+        </div>
+
+        <form
+          class="recipe-form"
+          (ngSubmit)="updateRecipe()"
+        >
+          <div class="form-field">
+            <label for="edit-recipe-title">
+              Recipe title
+            </label>
+
+            <input
+              id="edit-recipe-title"
+              type="text"
+              [(ngModel)]="newRecipe.title"
+              name="edit-title"
+              required
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="edit-recipe-category">
+              Category
+            </label>
+
+            <input
+              id="edit-recipe-category"
+              type="text"
+              [(ngModel)]="newRecipe.category"
+              name="edit-category"
+              required
+            />
+          </div>
+
+          <div class="dynamic-section">
+            <div class="section-title-row">
+              <div>
+                <label>
+                  Ingredients
+                </label>
+
+                <span>
+                  Update your ingredients.
+                </span>
+              </div>
+
+              <button
+                type="button"
+                class="add-small-btn"
+                (click)="addIngredient()"
+              >
+                + Add ingredient
+              </button>
+            </div>
+
+            <div class="dynamic-list">
+              @for (
+                ingredient of newRecipe.ingredients;
+                track $index
+              ) {
+                <div class="dynamic-row">
+                  <span class="row-number">
+                    {{ $index + 1 }}
+                  </span>
+
+                  <input
+                    type="text"
+                    [(ngModel)]="
+                      newRecipe.ingredients[$index]
+                    "
+                    [name]="'edit-ingredient-' + $index"
+                    placeholder="Ingredient"
+                  />
+
+                  <button
+                    type="button"
+                    class="remove-btn"
+                    [disabled]="
+                      newRecipe.ingredients.length === 1
+                    "
+                    (click)="
+                      removeIngredient($index)
+                    "
+                  >
+                    ×
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="dynamic-section">
+            <div class="section-title-row">
+              <div>
+                <label>
+                  Preparation steps
+                </label>
+
+                <span>
+                  Update the cooking process.
+                </span>
+              </div>
+
+              <button
+                type="button"
+                class="add-small-btn"
+                (click)="addStep()"
+              >
+                + Add step
+              </button>
+            </div>
+
+            <div class="dynamic-list">
+              @for (
+                step of newRecipe.steps;
+                track $index
+              ) {
+                <div class="dynamic-row">
+                  <span class="row-number">
+                    {{ $index + 1 }}
+                  </span>
+
+                  <textarea
+                    [(ngModel)]="
+                      newRecipe.steps[$index]
+                    "
+                    [name]="'edit-step-' + $index"
+                    placeholder="Preparation step"
+                    rows="2"
+                  ></textarea>
+
+                  <button
+                    type="button"
+                    class="remove-btn"
+                    [disabled]="
+                      newRecipe.steps.length === 1
+                    "
+                    (click)="
+                      removeStep($index)
+                    "
+                  >
+                    ×
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+
+          @if (saveError) {
+            <div class="form-error">
+              <span>!</span>
+              {{ saveError }}
+            </div>
+          }
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="cancel-btn"
+              [disabled]="saving"
+              (click)="closeEditModal()"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              class="create-btn"
+              [disabled]="saving"
+            >
+              @if (saving) {
+                <span class="button-spinner"></span>
+                Updating...
+              } @else {
+                <span>✓</span>
+                Update Recipe
+              }
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+</div>

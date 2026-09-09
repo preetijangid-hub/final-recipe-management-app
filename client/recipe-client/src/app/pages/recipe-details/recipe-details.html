@@ -1,0 +1,217 @@
+<div class="details-page">
+
+  <header class="details-navbar">
+
+    <button
+      type="button"
+      class="back-btn"
+      (click)="goBack()"
+    >
+      ← Back to recipes
+    </button>
+
+    <div class="brand">
+      <span class="brand-mark">✦</span>
+
+      <div>
+        <h1>Savoré</h1>
+        <span>RECIPE COLLECTION</span>
+      </div>
+    </div>
+
+  </header>
+
+
+  @if (loading) {
+
+    <main class="state-wrapper">
+
+      <div class="state-card">
+        <div class="spinner"></div>
+
+        <h2>Preparing your recipe...</h2>
+
+        <p>
+          Just a moment while we bring everything together.
+        </p>
+      </div>
+
+    </main>
+
+  }
+
+
+  @if (!loading && errorMessage) {
+
+    <main class="state-wrapper">
+
+      <div class="state-card error-card">
+
+        <div class="error-icon">!</div>
+
+        <h2>Recipe unavailable</h2>
+
+        <p>{{ errorMessage }}</p>
+
+        <button
+          type="button"
+          class="primary-btn"
+          (click)="goBack()"
+        >
+          Back to recipes
+        </button>
+
+      </div>
+
+    </main>
+
+  }
+
+
+  @if (!loading && !errorMessage && recipe) {
+
+    <main class="recipe-details">
+
+      <section class="recipe-hero">
+
+        <div class="recipe-visual">
+
+          <div class="plate-icon">
+            🍴
+          </div>
+
+          <span class="visual-label">
+            SAVORÉ
+          </span>
+
+        </div>
+
+
+        <div class="recipe-intro">
+
+          <span class="category">
+            {{ recipe.category }}
+          </span>
+
+          <h2>
+            {{ recipe.title }}
+          </h2>
+
+          <p class="intro-text">
+            A carefully curated recipe from your Savoré collection.
+          </p>
+
+          <div class="recipe-stats">
+
+            <div>
+              <strong>{{ recipe.ingredients.length }}</strong>
+              <span>Ingredients</span>
+            </div>
+
+            <div>
+              <strong>{{ recipe.steps.length }}</strong>
+              <span>Steps</span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section class="recipe-content">
+
+        <div class="ingredients-section">
+
+          <div class="section-heading">
+            <span class="section-number">01</span>
+
+            <div>
+              <span class="eyebrow">WHAT YOU NEED</span>
+              <h3>Ingredients</h3>
+            </div>
+          </div>
+
+
+          <div class="ingredients-list">
+
+            @for (
+              ingredient of getIngredients();
+              track $index
+            ) {
+
+              <div class="ingredient">
+
+                <span class="ingredient-dot"></span>
+
+                <span>
+                  {{ ingredient }}
+                </span>
+
+              </div>
+
+            }
+
+          </div>
+
+        </div>
+
+
+        <div class="steps-section">
+
+          <div class="section-heading">
+            <span class="section-number">02</span>
+
+            <div>
+              <span class="eyebrow">HOW TO MAKE IT</span>
+              <h3>Preparation</h3>
+            </div>
+          </div>
+
+
+          <div class="steps-list">
+
+            @for (
+              step of getSteps();
+              track $index
+            ) {
+
+              <div class="step">
+
+                <div class="step-number">
+                  {{ $index + 1 }}
+                </div>
+
+                <div class="step-content">
+                  <p>{{ step }}</p>
+                </div>
+
+              </div>
+
+            }
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section class="bottom-action">
+
+        <button
+          type="button"
+          class="primary-btn"
+          (click)="goBack()"
+        >
+          ← Explore more recipes
+        </button>
+
+      </section>
+
+    </main>
+
+  }
+
+</div>

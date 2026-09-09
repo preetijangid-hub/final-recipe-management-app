@@ -4,14 +4,14 @@ const app = require("../server");
 const Recipe = require("../models/Recipe");
 const User = require("../models/User");
 
-describe("Recipe Authorization API", () => {
+describe("Recipe Authorization API", () => { 
   let ownerToken;
   let ownerUserId;
   let otherUserToken;
   let adminToken;
-  let recipeId;
+  let recipeId;  
 
-  const password = "Test@12345";
+  const password = "Test@12345";  
 
   const ownerEmail = `owner${Date.now()}@example.com`;
   const otherEmail = `other${Date.now()}@example.com`;
@@ -48,7 +48,7 @@ describe("Recipe Authorization API", () => {
     // Create admin user
     const adminResponse = await request(app)
       .post("/api/auth/register")
-      .send({
+      .send({   
         name: "Admin User",
         email: adminEmail,
         password,
@@ -98,7 +98,7 @@ describe("Recipe Authorization API", () => {
         title: "Updated Recipe",
         ingredients: ["Updated Ingredient"],
         steps: ["Updated Step"],
-        category: "Lunch",
+        category: "Lunch", 
       });
 
     expect(response.statusCode).toBe(200);
@@ -107,7 +107,7 @@ describe("Recipe Authorization API", () => {
   test("non-owner should not be able to update another user's recipe", async () => {
     const response = await request(app)
       .put(`/api/recipes/${recipeId}`)
-      .set("Authorization", `Bearer ${otherUserToken}`)
+      .set("Authorization", `Bearer ${otherUserToken}`)     
       .send({
         title: "Unauthorized Update",
         ingredients: ["Ingredient"],

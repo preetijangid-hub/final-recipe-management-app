@@ -1,0 +1,154 @@
+<div class="auth-page">
+  <div class="auth-layout">
+
+    <section class="brand-panel">
+      <div class="brand-content">
+        <div class="logo-mark">
+          <span>✦</span>
+        </div>
+
+        <div class="brand-name">Savoré</div>
+
+        <p class="brand-tagline">
+          Curate. Cook. Savor.
+        </p>
+
+        <div class="food-art">
+          <div class="plate">
+            <div class="dish">
+              <span class="dish-leaf leaf-one">✦</span>
+              <span class="dish-leaf leaf-two">✦</span>
+              <span class="dish-center">🍝</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="brand-description">
+          Your personal space for discovering,
+          organizing and creating recipes worth remembering.
+        </p>
+      </div>
+    </section>
+
+    <section class="form-panel">
+      <div class="auth-card">
+
+        <div class="mobile-brand">
+          <div class="mobile-logo">✦</div>
+          <span>Savoré</span>
+        </div>
+
+        <div class="heading">
+          <span class="eyebrow">WELCOME BACK</span>
+
+          <h1>Sign in to Savoré</h1>
+
+          <p>
+            Continue your culinary journey.
+          </p>
+        </div>
+
+        <form
+          [formGroup]="loginForm"
+          (ngSubmit)="submit()"
+        >
+
+          <div class="form-group">
+            <label for="email">
+              Email address
+            </label>
+
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              placeholder="you@example.com"
+              autocomplete="email"
+            />
+
+            @if (email.invalid && email.touched) {
+              <small class="error">
+                @if (email.errors?.['required']) {
+                  Email is required.
+                } @else if (email.errors?.['email']) {
+                  Please enter a valid email address.
+                }
+              </small>
+            }
+          </div>
+
+          <div class="form-group">
+            <div class="label-row">
+              <label for="password">
+                Password
+              </label>
+            </div>
+
+            <div class="password-wrapper">
+              <input
+                id="password"
+                [type]="showPassword ? 'text' : 'password'"
+                formControlName="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+              />
+
+              <button
+                type="button"
+                class="password-toggle"
+                (click)="togglePassword()"
+              >
+                {{ showPassword ? 'Hide' : 'Show' }}
+              </button>
+            </div>
+
+            @if (password.invalid && password.touched) {
+              <small class="error">
+                Password is required.
+              </small>
+            }
+          </div>
+
+          @if (errorMessage) {
+            <div class="server-error">
+              <span>!</span>
+              {{ errorMessage }}
+            </div>
+          }
+
+          <button
+            type="submit"
+            class="submit-btn"
+            [disabled]="loading"
+          >
+            @if (loading) {
+              <span class="button-loader"></span>
+              Signing in...
+            } @else {
+              <span>Sign in</span>
+              <span class="arrow">→</span>
+            }
+          </button>
+        </form>
+
+        <div class="divider">
+          <span>or</span>
+        </div>
+
+        <div class="auth-footer">
+          <span>New to Savoré?</span>
+          <a routerLink="/register">
+            Create your account
+          </a>
+        </div>
+
+        <div class="footer-note">
+          <span>✦</span>
+          Crafted for food lovers
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+</div>
