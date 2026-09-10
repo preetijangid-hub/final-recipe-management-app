@@ -1,45 +1,47 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-
+import { Component, inject, signal } from '@angular/core';
 import {
-  Observable,
-  catchError,
-  finalize,
-  of,
-  shareReplay,
-  timeout,
-} from 'rxjs';
+  FormBuilder,
+  FormControl,
+  FormArray,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subject, TimeoutError, debounceTime, distinctUntilChanged, finalize, switchMap, timeout } from 'rxjs';
 
-import {
-  Recipe,
-  RecipeListResponse,
-} from '../../models/recipe';
-
+import { Recipe, RecipeListResponse } from '../../models/recipe';
 import { AuthService } from '../../services/auth';
 import { RecipeService } from '../../services/recipe';
+
+type RecipePayload = {
+  title: string;
+  category: string;
+  ingredients: string[];
+  steps: string[];
+};
 
 @Component({
   selector: 'app-recipes',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterLink,
-  ],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './recipes.html',
   styleUrl: './recipes.css',
 })
 export class Recipes {
   private readonly recipeService = inject(RecipeService);
   private readonly authService = inject(AuthService);
+  private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
-  recipes$: Observable<RecipeListResponse | null>;
+  readonly recipes = signal<Recipe[]>([]);
+  readonly pagination = signal<RecipeListResponse['pagination'] | null>(null);
 
-  loading = true;
-  errorMessage = '';
+  readonly loading = signal(true);
+  readonly errorMessage = signal('');
 
   search = '';
   category = '';
@@ -47,77 +49,132 @@ export class Recipes {
   currentPage = 1;
   readonly pageSize = 9;
 
-  readonly currentUser =
-    this.authService.getStoredUser();
+  readonly currentUser = this.authService.getStoredUser();
 
-  showAddModal = false;
-  showEditModal = false;
+  readonly showAddModal = signal(false);
+  readonly showEditModal = signal(false);
 
-  saving = false;
-  saveError = '';
-  saveSuccess = '';
+  readonly saving = signal(false);
+  readonly saveError = signal('');
+  readonly saveSuccess = signal('');
 
-  deletingId: string | null = null;
-
+  readonly deletingId = signal<string | null>(null);
   editingRecipeId = '';
 
-  newRecipe = {
-    title: '',
-    category: '',
-    ingredients: [''],
-    steps: [''],
-  };
+  private readonly searchInput$ = new Subject<string>();
+
+  readonly ingredients = this.fb.nonNullable.array([this.createRow()]);
+  readonly steps = this.fb.nonNullable.array([this.createRow()]);
+
+  recipeForm: FormGroup = this.fb.group({
+    title: [
+      '',
+      [Validators.required, Validators.minLength(3), Validators.maxLength(100)],
+    ],
+    category: [
+      '',
+      [Validators.required, Validators.minLength(2), Validators.maxLength(50)],
+    ],
+    ingredients: this.ingredients,
+    steps: this.steps,
+  });
 
   constructor() {
-    this.recipes$ = this.loadRecipes();
+    this.route.queryParams.subscribe((params) => {
+      const incomingCategory = (params['category'] ?? '').toString();
+      if (incomingCategory) {
+        this.category = incomingCategory;
+      } else if (params['category'] === '') {
+        this.category = '';
+      }
+
+      const editRecipeId = (params['editRecipeId'] ?? '').toString();
+      if (editRecipeId) {
+        this.recipeService.getRecipeById(editRecipeId).subscribe({
+          next: (response) => {
+            if (response.recipe) {
+              this.openEditModal(response.recipe);
+            }
+          },
+          error: () => {
+            this.saveError.set('Unable to load recipe for editing.');
+          },
+        });
+      }
+
+      this.currentPage = 1;
+      this.loadRecipes();
+    });
+
+    this.searchInput$
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged(),
+        switchMap((value) => {
+          this.search = value.trim();
+          this.currentPage = 1;
+          this.loading.set(true);
+          this.errorMessage.set('');
+
+          return this.recipeService
+            .getRecipes(this.currentPage, this.pageSize, this.search, this.category)
+            .pipe(
+              timeout(10000),
+              finalize(() => this.loading.set(false))
+            );
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          this.recipes.set(response.recipes);
+          this.pagination.set(response.pagination);
+        },
+        error: (error) => {
+          this.errorMessage.set(this.getErrorMessage(error, 'Unable to load recipes. Please try again.'));
+        },
+      });
   }
 
-  loadRecipes(): Observable<RecipeListResponse | null> {
-    this.loading = true;
-    this.errorMessage = '';
+  private loadRecipes(): void {
+    this.loading.set(true);
+    this.errorMessage.set('');
 
-    return this.recipeService
-      .getRecipes(
-        this.currentPage,
-        this.pageSize,
-        this.search,
-        this.category
-      )
+    this.recipeService
+      .getRecipes(this.currentPage, this.pageSize, this.search, this.category)
       .pipe(
         timeout(10000),
-
-        catchError((error) => {
-          console.error(
-            'Load recipes error:',
-            error
-          );
-
-          if (error?.name === 'TimeoutError') {
-            this.errorMessage =
-              'Recipe request timed out. Please make sure the backend is running.';
-          } else {
-            this.errorMessage =
-              error?.error?.message ||
-              'Unable to load recipes. Please try again.';
-          }
-
-          return of(null);
-        }),
-
         finalize(() => {
-          this.loading = false;
-        }),
-
-        shareReplay(1)
-      );
+          this.loading.set(false);
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          this.recipes.set(response.recipes);
+          this.pagination.set(response.pagination);
+        },
+        error: (error) => {
+          this.errorMessage.set(
+            this.getErrorMessage(
+              error,
+              'Unable to load recipes. Please try again.'
+            )
+          );
+        },
+      });
   }
 
   refreshRecipes(): void {
-    this.recipes$ = this.loadRecipes();
+    this.loadRecipes();
+  }
+
+  onSearchInput(event: Event): void {
+    const target = event.target as HTMLInputElement | null;
+    this.searchInput$.next(target?.value ?? '');
   }
 
   searchRecipes(): void {
     this.currentPage = 1;
+    this.search = this.search.trim();
     this.refreshRecipes();
   }
 
@@ -125,7 +182,6 @@ export class Recipes {
     this.search = '';
     this.category = '';
     this.currentPage = 1;
-
     this.refreshRecipes();
   }
 
@@ -144,10 +200,7 @@ export class Recipes {
   }
 
   getIngredients(recipe: Recipe): string {
-    return (
-      recipe.ingredients?.join(', ') ||
-      'No ingredients listed'
-    );
+    return recipe.ingredients.join(', ') || 'No ingredients listed';
   }
 
   isOwner(recipe: Recipe): boolean {
@@ -155,278 +208,52 @@ export class Recipes {
       return false;
     }
 
-    const recipeUser =
-      typeof recipe.user === 'string'
-        ? null
-        : recipe.user;
+    const owner = recipe.user;
+    const userId = this.currentUser._id;
 
-    if (
-      recipeUser?._id &&
-      this.currentUser._id
-    ) {
-      return (
-        recipeUser._id ===
-        this.currentUser._id
-      );
+    if (typeof owner === 'string') {
+      return owner === userId;
     }
 
-    if (
-      recipeUser?.email &&
-      this.currentUser.email
-    ) {
-      return (
-        recipeUser.email.toLowerCase() ===
-        this.currentUser.email.toLowerCase()
-      );
+    if (owner._id && userId) {
+      return owner._id === userId;
+    }
+
+    if (owner.email && this.currentUser.email) {
+      return owner.email.toLowerCase() === this.currentUser.email.toLowerCase();
     }
 
     return false;
   }
 
   canManageRecipe(recipe: Recipe): boolean {
-    if (!this.currentUser) {
-      return false;
-    }
+    return (
+      !!this.currentUser &&
+      (this.currentUser.role === 'admin' || this.isOwner(recipe))
+    );
+  }
 
-    if (
-      this.currentUser.role === 'admin'
-    ) {
-      return true;
-    }
-
-    return this.isOwner(recipe);
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   openAddModal(): void {
-    this.showAddModal = true;
-    this.showEditModal = false;
-
-    this.saving = false;
-    this.saveError = '';
-    this.saveSuccess = '';
-
+    this.showAddModal.set(true);
+    this.showEditModal.set(false);
+    this.saving.set(false);
+    this.saveError.set('');
+    this.saveSuccess.set('');
     this.resetForm();
   }
 
   closeAddModal(): void {
-    if (this.saving) {
+    if (this.saving()) {
       return;
     }
 
-    this.showAddModal = false;
-    this.saveError = '';
-  }
-
-  resetForm(): void {
-    this.newRecipe = {
-      title: '',
-      category: '',
-      ingredients: [''],
-      steps: [''],
-    };
-  }
-
-  addIngredient(): void {
-    this.newRecipe.ingredients.push('');
-  }
-
-  removeIngredient(index: number): void {
-    if (
-      this.newRecipe.ingredients.length <= 1
-    ) {
-      return;
-    }
-
-    this.newRecipe.ingredients.splice(
-      index,
-      1
-    );
-  }
-
-  addStep(): void {
-    this.newRecipe.steps.push('');
-  }
-
-  removeStep(index: number): void {
-    if (
-      this.newRecipe.steps.length <= 1
-    ) {
-      return;
-    }
-
-    this.newRecipe.steps.splice(
-      index,
-      1
-    );
-  }
-
-  validateRecipeForm(): {
-    valid: boolean;
-    title: string;
-    category: string;
-    ingredients: string[];
-    steps: string[];
-  } {
-    const title =
-      this.newRecipe.title.trim();
-
-    const category =
-      this.newRecipe.category.trim();
-
-    const ingredients =
-      this.newRecipe.ingredients
-        .map((item) => item.trim())
-        .filter(
-          (item) => item.length > 0
-        );
-
-    const steps =
-      this.newRecipe.steps
-        .map((item) => item.trim())
-        .filter(
-          (item) => item.length > 0
-        );
-
-    this.saveError = '';
-
-    if (!title) {
-      this.saveError =
-        'Please enter a recipe title.';
-    } else if (!category) {
-      this.saveError =
-        'Please enter a recipe category.';
-    } else if (
-      ingredients.length === 0
-    ) {
-      this.saveError =
-        'Please add at least one ingredient.';
-    } else if (
-      steps.length === 0
-    ) {
-      this.saveError =
-        'Please add at least one preparation step.';
-    }
-
-    return {
-      valid: !this.saveError,
-      title,
-      category,
-      ingredients,
-      steps,
-    };
-  }
-
-  createRecipe(): void {
-    console.log(
-      'CREATE RECIPE BUTTON CLICKED'
-    );
-
-    this.saveError = '';
-    this.saveSuccess = '';
-
-    const form =
-      this.validateRecipeForm();
-
-    console.log(
-      'Recipe form:',
-      form
-    );
-
-    if (!form.valid) {
-      console.log(
-        'Recipe form validation failed'
-      );
-      return;
-    }
-
-    this.saving = true;
-
-    console.log(
-      'Sending create recipe request...'
-    );
-
-    this.recipeService
-      .createRecipe({
-        title: form.title,
-        category: form.category,
-        ingredients: form.ingredients,
-        steps: form.steps,
-      })
-      .pipe(
-        timeout(10000),
-
-        finalize(() => {
-          console.log(
-            'Create recipe request finished'
-          );
-
-          this.saving = false;
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          console.log(
-            'Create recipe response:',
-            response
-          );
-
-          const createdRecipe =
-            response?.recipe;
-
-          if (!createdRecipe?._id) {
-            this.saveError =
-              'Recipe was created, but the server did not return the recipe ID.';
-            return;
-          }
-
-          this.showAddModal = false;
-
-          this.resetForm();
-
-          this.saveSuccess =
-            'Recipe created successfully!';
-
-          console.log(
-            'Created recipe ID:',
-            createdRecipe._id
-          );
-
-          this.router.navigate([
-            '/recipes',
-            createdRecipe._id,
-          ]);
-        },
-
-        error: (error) => {
-          console.error(
-            'CREATE RECIPE ERROR:',
-            error
-          );
-
-          console.error(
-            'Server error body:',
-            error?.error
-          );
-
-          console.error(
-            'HTTP status:',
-            error?.status
-          );
-
-          if (
-            error?.name ===
-            'TimeoutError'
-          ) {
-            this.saveError =
-              'The server did not respond within 10 seconds. Please check that the backend is running.';
-          } else {
-            this.saveError =
-              error?.error?.message ||
-              error?.message ||
-              'Unable to create recipe. Please try again.';
-          }
-        },
-      });
+    this.showAddModal.set(false);
+    this.saveError.set('');
   }
 
   openEditModal(recipe: Recipe): void {
@@ -434,169 +261,235 @@ export class Recipes {
       return;
     }
 
-    this.showAddModal = false;
-    this.showEditModal = true;
+    this.showAddModal.set(false);
+    this.showEditModal.set(true);
+    this.editingRecipeId = recipe._id;
+    this.saving.set(false);
+    this.saveError.set('');
+    this.saveSuccess.set('');
 
-    this.editingRecipeId =
-      recipe._id;
-
-    this.saving = false;
-    this.saveError = '';
-    this.saveSuccess = '';
-
-    this.newRecipe = {
-      title: recipe.title || '',
-      category: recipe.category || '',
-
-      ingredients:
-        recipe.ingredients?.length
-          ? [...recipe.ingredients]
-          : [''],
-
-      steps:
-        recipe.steps?.length
-          ? [...recipe.steps]
-          : [''],
-    };
+    this.recipeForm.reset({
+      title: recipe.title,
+      category: recipe.category,
+    });
+    this.fillRows(this.ingredients, recipe.ingredients);
+    this.fillRows(this.steps, recipe.steps);
   }
 
   closeEditModal(): void {
-    if (this.saving) {
+    if (this.saving()) {
       return;
     }
 
-    this.showEditModal = false;
-
+    this.showEditModal.set(false);
     this.editingRecipeId = '';
-
-    this.saveError = '';
+    this.saveError.set('');
   }
 
-  updateRecipe(): void {
-    console.log(
-      'UPDATE RECIPE BUTTON CLICKED'
-    );
-
-    this.saveError = '';
-    this.saveSuccess = '';
-
-    if (!this.editingRecipeId) {
-      this.saveError =
-        'Recipe ID was not found.';
+  createRecipe(): void {
+    if (this.saving()) {
       return;
     }
 
-    const form =
-      this.validateRecipeForm();
+    this.saveError.set('');
+    this.saveSuccess.set('');
 
-    if (!form.valid) {
+    const payload = this.buildPayload();
+    if (!payload) {
       return;
     }
 
-    this.saving = true;
+    this.saving.set(true);
 
     this.recipeService
-      .updateRecipe(
-        this.editingRecipeId,
-        {
-          title: form.title,
-          category: form.category,
-          ingredients:
-            form.ingredients,
-          steps: form.steps,
-        }
-      )
+      .createRecipe(payload)
       .pipe(
         timeout(10000),
-
         finalize(() => {
-          this.saving = false;
+          this.saving.set(false);
         })
       )
       .subscribe({
         next: () => {
-          this.showEditModal = false;
-
-          this.editingRecipeId = '';
-
+          this.showAddModal.set(false);
           this.resetForm();
-
-          this.saveSuccess =
-            'Recipe updated successfully!';
-
+          this.saveSuccess.set('Recipe created successfully!');
           this.refreshRecipes();
         },
-
         error: (error) => {
-          console.error(
-            'UPDATE RECIPE ERROR:',
-            error
+          this.saveError.set(
+            this.getErrorMessage(
+              error,
+              'Unable to create recipe. Please try again.'
+            )
           );
+        },
+      });
+  }
 
-          this.saveError =
-            error?.error?.message ||
-            error?.message ||
-            'Unable to update recipe. Please try again.';
+  updateRecipe(): void {
+    if (this.saving()) {
+      return;
+    }
+
+    this.saveError.set('');
+    this.saveSuccess.set('');
+
+    if (!this.editingRecipeId) {
+      this.saveError.set('Recipe ID was not found.');
+      return;
+    }
+
+    const payload = this.buildPayload();
+    if (!payload) {
+      return;
+    }
+
+    this.saving.set(true);
+
+    this.recipeService
+      .updateRecipe(this.editingRecipeId, payload)
+      .pipe(
+        timeout(10000),
+        finalize(() => {
+          this.saving.set(false);
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.showEditModal.set(false);
+          this.editingRecipeId = '';
+          this.resetForm();
+          this.saveSuccess.set('Recipe updated successfully!');
+          this.refreshRecipes();
+        },
+        error: (error) => {
+          this.saveError.set(
+            this.getErrorMessage(
+              error,
+              'Unable to update recipe. Please try again.'
+            )
+          );
         },
       });
   }
 
   deleteRecipe(recipe: Recipe): void {
-    if (!this.canManageRecipe(recipe)) {
+    if (this.deletingId() || !this.canManageRecipe(recipe)) {
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        `Are you sure you want to delete "${recipe.title}"?`
-      );
-
-    if (!confirmed) {
+    if (!window.confirm(`Are you sure you want to delete "${recipe.title}"?`)) {
       return;
     }
 
-    this.deletingId =
-      recipe._id;
-
-    this.saveError = '';
-    this.saveSuccess = '';
+    this.deletingId.set(recipe._id);
+    this.saveError.set('');
+    this.saveSuccess.set('');
 
     this.recipeService
       .deleteRecipe(recipe._id)
       .pipe(
         timeout(10000),
-
         finalize(() => {
-          this.deletingId = null;
+          this.deletingId.set(null);
         })
       )
       .subscribe({
         next: () => {
-          this.saveSuccess =
-            'Recipe deleted successfully!';
-
+          this.saveSuccess.set('Recipe deleted successfully!');
           this.refreshRecipes();
         },
-
         error: (error) => {
-          console.error(
-            'DELETE RECIPE ERROR:',
-            error
+          this.saveError.set(
+            this.getErrorMessage(
+              error,
+              'Unable to delete recipe. Please try again.'
+            )
           );
-
-          this.saveError =
-            error?.error?.message ||
-            error?.message ||
-            'Unable to delete recipe. Please try again.';
         },
       });
   }
 
-  logout(): void {
-    this.authService.logout();
+  addIngredient(): void {
+    this.ingredients.push(this.createRow());
+  }
 
-    this.router.navigate([
-      '/login',
-    ]);
+  removeIngredient(index: number): void {
+    if (this.ingredients.length > 1) {
+      this.ingredients.removeAt(index);
+    }
+  }
+
+  addStep(): void {
+    this.steps.push(this.createRow());
+  }
+
+  removeStep(index: number): void {
+    if (this.steps.length > 1) {
+      this.steps.removeAt(index);
+    }
+  }
+
+  resetForm(): void {
+    this.recipeForm.reset({ title: '', category: '' });
+    this.fillRows(this.ingredients, ['']);
+    this.fillRows(this.steps, ['']);
+  }
+
+  private buildPayload(): RecipePayload | null {
+    if (this.recipeForm.invalid) {
+      this.recipeForm.markAllAsTouched();
+      return null;
+    }
+
+    const ingredients = this.ingredients.value
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    const steps = this.steps.value
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    if (ingredients.length === 0) {
+      this.saveError.set('Please add at least one ingredient.');
+      return null;
+    }
+
+    if (steps.length === 0) {
+      this.saveError.set('Please add at least one preparation step.');
+      return null;
+    }
+
+    return {
+      title: this.recipeForm.value.title.trim(),
+      category: this.recipeForm.value.category.trim(),
+      ingredients,
+      steps,
+    };
+  }
+
+  private fillRows(
+    array: FormArray<FormControl<string>>,
+    values: string[]
+  ): void {
+    array.clear();
+
+    for (const value of values.length > 0 ? values : ['']) {
+      array.push(this.createRow(value));
+    }
+  }
+
+  private createRow(value = ''): FormControl<string> {
+    return this.fb.nonNullable.control(value);
+  }
+
+  private getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof TimeoutError) {
+      return 'The request timed out. Please make sure the backend is running.';
+    }
+
+    const response = error as { error?: { message?: string }; message?: string };
+    return response?.error?.message || response?.message || fallback;
   }
 }

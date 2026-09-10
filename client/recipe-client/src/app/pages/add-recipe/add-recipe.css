@@ -1,0 +1,22 @@
+.add-recipe-page { padding: 28px 48px 80px; color: #352c21; }
+.page-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
+.section-kicker { color: #a36d25; font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+.page-header h1 { margin: 8px 0 0; font-family: Georgia, serif; font-size: clamp(40px, 4vw, 56px); color: #352c21; }
+.add-recipe-shell { background: #fffaf4; border: 1px solid #e7dcca; border-radius: 30px; padding: 30px; box-shadow: 0 12px 30px rgba(53,44,33,0.05); }
+.recipe-form { display: flex; flex-direction: column; gap: 16px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(280px, 1fr)); gap: 16px; }
+.field-row { display: flex; flex-direction: column; gap: 8px; }
+.field-row.wide { grid-column: 1 / -1; }
+label { font-weight: 700; color: #715f4c; }
+input, select { min-height: 45px; padding: 10px 12px; border-radius: 12px; border: 1px solid #dfd7cc; background: white; color: #352c21; }
+.row-list { display: flex; flex-direction: column; gap: 10px; }
+.input-row { display: flex; align-items: center; gap: 10px; }
+.input-row input { flex: 1; }
+.mini-button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #dfd7cc; background: transparent; color: #9b3a20; cursor: pointer; }
+.text-button { background: transparent; border: none; color: #a36d25; font-weight: 700; cursor: pointer; margin-top: 8px; }
+.form-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+.primary-button { border: none; border-radius: 999px; background: #352c21; color: #fffaf4; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+.state-block { display: flex; align-items: center; gap: 8px; }
+.state-block.error { color: #9b3a20; }
+.state-block.success { color: #2d6a4f; }
+.state-icon { display: inline-grid; width: 36px; height: 36px; border-radius: 50%; place-items: center; background: #eadbc4; font-weight: 900; color: #a36d25; }

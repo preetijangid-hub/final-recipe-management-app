@@ -93,13 +93,28 @@
             {{ recipe.category }}
           </span>
 
-          <h2>
-            {{ recipe.title }}
-          </h2>
+          <div class="recipe-title-row">
+            <h2>
+              {{ recipe.title }}
+            </h2>
+
+            <div class="details-actions" *ngIf="canManageRecipe()">
+              <button type="button" mat-stroked-button color="primary" (click)="editRecipe()">
+                Edit
+              </button>
+              <button type="button" mat-flat-button color="warn" (click)="deleteRecipe()">
+                Delete
+              </button>
+            </div>
+          </div>
 
           <p class="intro-text">
             A carefully curated recipe from your Savoré collection.
           </p>
+
+          <div class="recipe-author">
+            <span class="author-label">By {{ getAuthorName() }}</span>
+          </div>
 
           <div class="recipe-stats">
 
@@ -111,6 +126,16 @@
             <div>
               <strong>{{ recipe.steps.length }}</strong>
               <span>Steps</span>
+            </div>
+
+            <div>
+              <strong>{{ recipe.orderCount ?? 0 }}</strong>
+              <span>Orders</span>
+            </div>
+
+            <div>
+              <strong>{{ recipe.rating?.average ?? 0 }}</strong>
+              <span>Rating</span>
             </div>
 
           </div>

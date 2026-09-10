@@ -90,7 +90,7 @@ export class Register {
       .subscribe({
         next: () => {
           this.loading = false;
-          this.router.navigate(['/recipes']);
+          this.router.navigate(['/dashboard']);
         },
         error: (error) => {
           this.loading = false;

@@ -1,4 +1,137 @@
+* {
+  box-sizing: border-box;
+}
+
 :host {
   display: block;
   min-height: 100vh;
+}
+
+.savor-app {
+  min-height: 100vh;
+  background: #faf8f4;
+  color: #352c21;
+}
+
+.app-topbar {
+  min-height: 78px;
+  padding: 16px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid #e7dcca;
+  background: #fffaf4;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #352c21;
+  color: #fffaf4;
+  font-family: Georgia, serif;
+  font-size: 22px;
+}
+
+.brand-copy { display: flex; flex-direction: column; }
+
+.brand-name {
+  font-family: Georgia, serif;
+  font-size: 25px;
+  color: #352c21;
+}
+
+.brand-subtitle {
+  font-size: 9px;
+  color: #8a8177;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  flex-wrap: wrap;
+}
+
+.nav-link {
+  position: relative;
+  color: #665d55;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+}
+
+.nav-link:hover {
+  color: #a36d25;
+}
+
+.nav-link.active {
+  color: #a36d25;
+}
+
+.nav-link.active::after {
+  content: '';
+  display: block;
+  height: 2px;
+  background: #a36d25;
+  border-radius: 99px;
+  margin-top: 6px;
+}
+
+.user-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.current-user {
+  color: #715f4c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.logout-button {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid #dfd7cc;
+  background: transparent;
+  color: #352c21;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: #352c21;
+  color: #fffaf4;
+}
+
+.app-main {
+  min-height: calc(100vh - 78px);
+}
+
+@media (max-width: 960px) {
+  .app-topbar { align-items: flex-start; flex-wrap: wrap; }
+  .app-nav { order: 3; width: 100%; justify-content: flex-start; gap: 14px; }
+}
+
+@media (max-width: 640px) {
+  .app-topbar { padding: 16px 20px; }
+  .app-nav { gap: 12px; }
+  .user-controls { margin-left: auto; }
 }

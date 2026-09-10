@@ -90,6 +90,23 @@ describe("Recipe Authorization API", () => {
     recipeId = recipeResponse.body.recipe._id;
   });
 
+  test("GET /api/recipes should not fail when a recipe document has no ratings field", async () => {
+    await Recipe.create({
+      title: "Ratings-free Recipe",
+      ingredients: ["Ingredient A"],
+      steps: ["Step A"],
+      category: "Dinner",
+      user: ownerUserId,
+    });
+
+    const response = await request(app)
+      .get("/api/recipes?page=1&limit=5")
+      .set("Authorization", `Bearer ${ownerToken}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.recipes).toEqual(expect.any(Array));
+  });
+
   test("owner should be able to update their own recipe", async () => {
     const response = await request(app)
       .put(`/api/recipes/${recipeId}`)

@@ -1,0 +1,35 @@
+<section class="categories-page">
+  <div class="page-header">
+    <div>
+      <span class="section-kicker">SAVORÉ CATEGORIES</span>
+      <h1>Browse by category</h1>
+    </div>
+    <a class="icon-button" routerLink="/discover">Discover recipes</a>
+  </div>
+
+  <section class="categories-shell">
+    <div class="state-block loading" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Loading categories...</p>
+    </div>
+
+    <div class="state-block error" *ngIf="!loading && errorMessage">
+      <span class="state-icon">!</span>
+      <p>{{ errorMessage }}</p>
+      <button class="primary-button small-button" type="button" (click)="loadCategories()">Retry</button>
+    </div>
+
+    <div class="category-grid" *ngIf="!loading && !errorMessage">
+      <button class="category-card" type="button" *ngFor="let category of categories" (click)="openCategory(category)">
+        <span class="category-icon">✦</span>
+        <span class="category-name">{{ category }}</span>
+        <span class="category-arrow">→</span>
+      </button>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && !errorMessage && categories.length === 0">
+      <span class="state-icon">✦</span>
+      <p>No categories are available yet.</p>
+    </div>
+  </section>
+</section>

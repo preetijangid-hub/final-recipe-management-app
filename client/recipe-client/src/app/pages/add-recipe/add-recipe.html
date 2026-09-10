@@ -1,0 +1,88 @@
+<section class="add-recipe-page">
+  <div class="page-header">
+    <div>
+      <span class="section-kicker">SAVORÉ KITCHEN</span>
+      <h1>Add recipe</h1>
+    </div>
+  </div>
+
+  <section class="add-recipe-shell">
+    <div class="state-block error" *ngIf="errorMessage">
+      <span class="state-icon">!</span>
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <div class="state-block success" *ngIf="successMessage">
+      <span class="state-icon">✓</span>
+      <p>{{ successMessage }}</p>
+    </div>
+
+    <form class="recipe-form" [formGroup]="recipeForm" (ngSubmit)="submit()">
+      <div class="form-grid">
+        <div class="field-row">
+          <label for="title">Title</label>
+          <input id="title" formControlName="title" placeholder="Recipe title" />
+        </div>
+
+        <div class="field-row">
+          <label for="category">Category</label>
+          <input id="category" formControlName="category" placeholder="Indian" />
+        </div>
+
+        <div class="field-row">
+          <label for="spiceLevel">Spice level</label>
+          <select id="spiceLevel" formControlName="spiceLevel">
+            <option>Mild</option>
+            <option>Medium</option>
+            <option>Hot</option>
+            <option>Very Hot</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <label for="sweetnessLevel">Sweetness level</label>
+          <select id="sweetnessLevel" formControlName="sweetnessLevel">
+            <option>Not Sweet</option>
+            <option>Lightly Sweet</option>
+            <option>Sweet</option>
+            <option>Very Sweet</option>
+          </select>
+        </div>
+
+        <div class="field-row wide">
+          <label>Ingredients</label>
+          <div class="row-list" formArrayName="ingredients">
+            <div class="input-row" *ngFor="let ingredient of ingredients.controls; let i = index">
+              <input type="text" [formControlName]="i" placeholder="Ingredient" />
+              <button type="button" class="mini-button" (click)="removeIngredientRow(i)" *ngIf="ingredients.length > 1">×</button>
+            </div>
+          </div>
+          <button type="button" class="text-button" (click)="addIngredientRow()">+ Add ingredient</button>
+        </div>
+
+        <div class="field-row wide">
+          <label>Steps</label>
+          <div class="row-list" formArrayName="steps">
+            <div class="input-row" *ngFor="let step of steps.controls; let i = index">
+              <input type="text" [formControlName]="i" placeholder="Step" />
+              <button type="button" class="mini-button" (click)="removeStepRow(i)" *ngIf="steps.length > 1">×</button>
+            </div>
+          </div>
+          <button type="button" class="text-button" (click)="addStepRow()">+ Add step</button>
+        </div>
+
+        <div class="field-row wide">
+          <label for="image">Image URL</label>
+          <input id="image" formControlName="image" placeholder="Optional image URL" />
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="primary-button" type="submit" [disabled]="saving">
+          <span *ngIf="!saving">Create recipe</span>
+          <span *ngIf="saving">Creating...</span>
+        </button>
+      </div>
+    </form>
+  </section>
+</section>

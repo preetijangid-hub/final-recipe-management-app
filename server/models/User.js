@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      lowercase: true,  
+      lowercase: true,
       trim: true,
     },
     password: {
@@ -19,9 +19,37 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     role: {
-      type: String,   
+      type: String,
       enum: ["user", "admin"],
       default: "user",
+    },
+    preferences: {
+      allergies: {
+        type: [String],
+        default: [],
+      },
+      avoidIngredients: {
+        type: [String],
+        default: [],
+      },
+      preferredIngredients: {
+        type: [String],
+        default: [],
+      },
+      dietaryPreferences: {
+        type: [String],
+        default: [],
+      },
+      spiceLevel: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      sweetnessLevel: {
+        type: String,
+        trim: true,
+        default: "",
+      },
     },
   },
   {

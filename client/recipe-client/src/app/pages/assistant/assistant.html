@@ -1,0 +1,60 @@
+<section class="assistant-page">
+  <div class="assistant-shell">
+    <section class="assistant-header">
+      <div>
+        <span class="section-kicker">SAVORÉ FOOD ASSISTANT</span>
+        <h1>Kitchen companion</h1>
+      </div>
+      <a class="icon-button" routerLink="/preferences">Food preferences</a>
+    </section>
+
+    <section class="assistant-layout">
+      <aside class="assistant-panel">
+        <div class="panel-title">Private profile</div>
+        <div class="profile-summary">
+          <span class="avatar">{{ currentUser?.name?.slice(0, 1) || 'S' }}</span>
+          <div>
+            <span class="profile-name">{{ currentUser?.name || 'Savoré cook' }}</span>
+            <span class="profile-role">{{ currentUser?.role || 'member' }}</span>
+          </div>
+        </div>
+        <div class="panel-divider"></div>
+        <div class="quick-prompts">
+          <button class="prompt-chip" type="button" (click)="message='I am allergic to peanuts.'">Peanut allergy</button>
+          <button class="prompt-chip" type="button" (click)="message='I don’t want onion.'">Avoid onion</button>
+          <button class="prompt-chip" type="button" (click)="message='I prefer mild food.'">Mild food</button>
+          <button class="prompt-chip" type="button" (click)="message='I want paneer without onion.'">Paneer pairing</button>
+        </div>
+      </aside>
+
+      <main class="chat-panel">
+        <section class="chat-card">
+          <div class="chat-card-header">
+            <span class="chat-icon">✦</span>
+            <span class="chat-title">Savoré Kitchen Guide</span>
+          </div>
+          <div class="chat-output">
+            <p class="assistant-reply">{{ reply || 'Tell me about your food preferences.' }}</p>
+            <div class="matches" *ngIf="matches.length">
+              <div class="match-row" *ngFor="let match of matches">
+                <span class="match-level">{{ match.level }}</span>
+                <span class="match-title">{{ match.title }}</span>
+                <span class="match-reasons" *ngFor="let reason of match.reasons">{{ reason }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="chat-form">
+            <textarea [(ngModel)]="message" placeholder="Tell me about your allergies, ingredients to avoid, or dish preferences..."></textarea>
+            <div class="chat-form-actions">
+              <button class="primary-button" type="button" (click)="askAssistant()" [disabled]="loading">
+                <span *ngIf="!loading">Ask Savoré</span>
+                <span *ngIf="loading">Thinking...</span>
+              </button>
+            </div>
+          </div>
+          <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+        </section>
+      </main>
+    </section>
+  </div>
+</section>

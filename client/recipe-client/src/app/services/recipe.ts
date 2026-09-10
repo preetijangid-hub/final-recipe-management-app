@@ -6,8 +6,12 @@ import {
 import { Observable } from 'rxjs';
 
 import {
+  CompatibilityResponse,
+  OrderResponse,
+  RateResponse,
   Recipe,
   RecipeListResponse,
+  RecipeStatsResponse,
 } from '../models/recipe';
 
 @Injectable({
@@ -23,11 +27,13 @@ export class RecipeService {
     page = 1,
     limit = 10,
     search = '',
-    category = ''
+    category = '',
+    sort = 'newest'
   ): Observable<RecipeListResponse> {
     let params = new HttpParams()
       .set('page', page)
-      .set('limit', limit);
+      .set('limit', limit)
+      .set('sort', sort);
 
     if (search.trim()) {
       params = params.set(
@@ -57,12 +63,35 @@ export class RecipeService {
     );
   }
 
+  getRecipeStats(): Observable<RecipeStatsResponse> {
+    return this.http.get<RecipeStatsResponse>(
+      `${this.apiUrl}/stats`
+    );
+  }
+
+  getMyRecipes(): Observable<{ recipes: Recipe[] }> {
+    return this.http.get<{ recipes: Recipe[] }>(
+      `${this.apiUrl}/mine`
+    );
+  }
+
+  getRecipeCompatibility(
+    id: string
+  ): Observable<CompatibilityResponse> {
+    return this.http.get<CompatibilityResponse>(
+      `${this.apiUrl}/${id}/compatibility`
+    );
+  }
+
   createRecipe(
     recipe: {
       title: string;
       ingredients: string[];
       steps: string[];
       category: string;
+      image?: string;
+      spiceLevel?: string;
+      sweetnessLevel?: string;
     }
   ): Observable<{ recipe: Recipe }> {
     return this.http.post<{ recipe: Recipe }>(
@@ -78,6 +107,9 @@ export class RecipeService {
       ingredients: string[];
       steps: string[];
       category: string;
+      image?: string;
+      spiceLevel?: string;
+      sweetnessLevel?: string;
     }
   ): Observable<{ recipe: Recipe }> {
     return this.http.put<{ recipe: Recipe }>(
@@ -91,6 +123,54 @@ export class RecipeService {
   ): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(
       `${this.apiUrl}/${id}`
+    );
+  }
+
+  rateRecipe(
+    id: string,
+    value: number
+  ): Observable<RateResponse> {
+    return this.http.post<RateResponse>(
+      `${this.apiUrl}/${id}/rating`,
+      { value }
+    );
+  }
+
+  orderRecipe(id: string): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>(
+      `${this.apiUrl}/${id}/order`,
+      {}
+    );
+  }
+
+  parseAssistant(message: string): Observable<{
+    reply: string;
+    preferences: any;
+    matches: Array<{
+      recipeId: string;
+      title: string;
+      level: string;
+      reasons: string[];
+      spiceLevel?: string;
+      sweetnessLevel?: string;
+    }>;
+  }> {
+    return this.http.post<any>(
+      'http://localhost:5000/api/assistant/chat',
+      { message }
+    );
+  }
+
+  getPreferences(): Observable<{ preferences: any }> {
+    return this.http.get<{ preferences: any }>(
+      'http://localhost:5000/api/preferences'
+    );
+  }
+
+  updatePreferences(payload: any): Observable<{ preferences: any; message: string }> {
+    return this.http.put<{ preferences: any; message: string }>(
+      'http://localhost:5000/api/preferences',
+      payload
     );
   }
 }

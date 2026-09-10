@@ -1,0 +1,70 @@
+<section class="preferences-page">
+  <div class="page-header">
+    <div>
+      <span class="section-kicker">SAVORÉ PRIVATE PROFILE</span>
+      <h1>Food preferences</h1>
+    </div>
+    <a class="icon-button" routerLink="/assistant">Food assistant</a>
+  </div>
+
+  <section class="preferences-shell">
+    <div class="preferences-loading" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Loading your food profile...</p>
+    </div>
+
+    <div class="preferences-error" *ngIf="!loading && errorMessage">
+      <span class="state-icon">!</span>
+      <p>{{ errorMessage }}</p>
+      <button class="primary-button small-button" type="button" (click)="loadPreferences()">Retry</button>
+    </div>
+
+    <form class="preference-form" *ngIf="!loading && !errorMessage" (ngSubmit)="save()">
+      <section class="form-grid">
+        <div class="field-row wide">
+          <label for="allergies">Allergies</label>
+          <textarea id="allergies" [(ngModel)]="preferences.allergies" name="allergies" placeholder="peanuts, sesame..."></textarea>
+        </div>
+
+        <div class="field-row wide">
+          <label for="avoidIngredients">Ingredients to avoid</label>
+          <textarea id="avoidIngredients" [(ngModel)]="preferences.avoidIngredients" name="avoidIngredients" placeholder="onion, mushrooms..."></textarea>
+        </div>
+
+        <div class="field-row wide">
+          <label for="preferredIngredients">Preferred ingredients</label>
+          <textarea id="preferredIngredients" [(ngModel)]="preferences.preferredIngredients" name="preferredIngredients" placeholder="paneer, tomato..."></textarea>
+        </div>
+
+        <div class="field-row wide">
+          <label for="dietaryPreferences">Dietary preferences</label>
+          <textarea id="dietaryPreferences" [(ngModel)]="preferences.dietaryPreferences" name="dietaryPreferences" placeholder="vegetarian, dairy-free..."></textarea>
+        </div>
+
+        <div class="field-row">
+          <label for="spiceLevel">Spice preference</label>
+          <select id="spiceLevel" [(ngModel)]="preferences.spiceLevel" name="spiceLevel">
+            <option value="">No preference</option>
+            <option *ngFor="let option of spiceOptions" [value]="option">{{ option }}</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <label for="sweetnessLevel">Sweetness preference</label>
+          <select id="sweetnessLevel" [(ngModel)]="preferences.sweetnessLevel" name="sweetnessLevel">
+            <option value="">No preference</option>
+            <option *ngFor="let option of sweetnessOptions" [value]="option">{{ option }}</option>
+          </select>
+        </div>
+      </section>
+
+      <div class="form-actions">
+        <span class="save-message" *ngIf="successMessage">{{ successMessage }}</span>
+        <button class="primary-button" type="submit" [disabled]="saving">
+          <span *ngIf="!saving">Save preferences</span>
+          <span *ngIf="saving">Saving...</span>
+        </button>
+      </div>
+    </form>
+  </section>
+</section>

@@ -4,12 +4,18 @@ const { body, param } = require("express-validator");
 const {
   createRecipe,
   getRecipes,
+  getMyRecipes,
+  getRecipeStats,
   getRecipeById,
+  getRecipeCompatibility,
   updateRecipe,
-  deleteRecipe
+  deleteRecipe,
+  rateRecipe,
+  orderRecipe,
 } = require("../controllers/recipeController");
 
 const protect = require("../middleware/authMiddleware");
+const optionalAuth = require("../middleware/optionalAuth");
 
 const router = express.Router();
 
@@ -44,33 +50,56 @@ const recipeValidationRules = [
     .notEmpty()
     .withMessage("Category is required.")
     .isLength({ min: 2, max: 50 })
-    .withMessage("Category must be between 2 and 50 characters.")
+    .withMessage("Category must be between 2 and 50 characters."),
+
+  body("image")
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Image URL must be at most 500 characters."),
 ];
 
 const recipeIdValidation = [
   param("id")
     .isMongoId()
-    .withMessage("Invalid recipe ID.")
+    .withMessage("Invalid recipe ID."),
+];
+
+const ratingValidation = [
+  body("value")
+    .isInt({ min: 1, max: 5 })
+    .withMessage("Rating must be between 1 and 5."),
 ];
 
 router
   .route("/")
-  .get(getRecipes)
+  .get(optionalAuth, getRecipes)
   .post(protect, recipeValidationRules, createRecipe);
+
+router.get("/stats", protect, getRecipeStats);
+router.get("/mine", protect, getMyRecipes);
 
 router
   .route("/:id")
-  .get(recipeIdValidation, getRecipeById)
-  .put(
-    protect,
-    recipeIdValidation,
-    recipeValidationRules,
-    updateRecipe
-  )
-  .delete(
-    protect,
-    recipeIdValidation,
-    deleteRecipe
-  );
+  .get(optionalAuth, getRecipeById)
+  .put(protect, recipeIdValidation, recipeValidationRules, updateRecipe)
+  .delete(protect, recipeIdValidation, deleteRecipe);
+
+router.post(
+  "/:id/rating",
+  protect,
+  recipeIdValidation,
+  ratingValidation,
+  rateRecipe
+);
+
+router.post("/:id/order", protect, recipeIdValidation, orderRecipe);
+
+router.get(
+  "/:id/compatibility",
+  protect,
+  recipeIdValidation,
+  getRecipeCompatibility
+);
 
 module.exports = router;

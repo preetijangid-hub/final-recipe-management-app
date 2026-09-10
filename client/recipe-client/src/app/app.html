@@ -1,1 +1,31 @@
-<router-outlet></router-outlet>
+<div class="savor-app">
+  <header class="app-topbar" *ngIf="isAuthenticated()">
+    <a class="brand-wrap" routerLink="/dashboard">
+      <span class="brand-mark">S</span>
+      <span class="brand-copy">
+        <span class="brand-name">Savoré</span>
+        <span class="brand-subtitle">Recipe Atelier</span>
+      </span>
+    </a>
+
+    <nav class="app-nav">
+      <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+      <a class="nav-link" routerLink="/discover" routerLinkActive="active">Discover</a>
+      <a class="nav-link" routerLink="/categories" routerLinkActive="active">Categories</a>
+      <a class="nav-link" routerLink="/my-recipes" routerLinkActive="active">My Recipes</a>
+      <a class="nav-link" routerLink="/add-recipe" routerLinkActive="active">Add Recipe</a>
+      <a class="nav-link" routerLink="/food-assistant" routerLinkActive="active">Food Assistant</a>
+    </nav>
+
+    <div class="user-controls">
+      <span class="current-user" *ngIf="currentUser">
+        {{ currentUser.name }}
+      </span>
+      <button class="logout-button" type="button" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <router-outlet></router-outlet>
+  </main>
+</div>
