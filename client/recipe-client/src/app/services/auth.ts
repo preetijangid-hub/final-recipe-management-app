@@ -12,7 +12,7 @@ import { environment } from '../../environments/environment';
 export class AuthService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiUrl = `${environment.apiBaseUrl}/api/auth`;
+  private readonly apiUrl = `${environment.apiBaseUrl}/auth`;
 
   private readonly tokenKey = 'token';
   private readonly userKey = 'user';
@@ -64,14 +64,11 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem(
-      this.tokenKey
-    );
+    return localStorage.getItem(this.tokenKey);
   }
 
   getStoredUser(): User | null {
-    const user =
-      localStorage.getItem(this.userKey);
+    const user = localStorage.getItem(this.userKey);
 
     if (!user) {
       return null;
@@ -89,24 +86,15 @@ export class AuthService {
   }
 
   isAdmin(): boolean {
-    return (
-      this.getStoredUser()?.role === 'admin'
-    );
+    return this.getStoredUser()?.role === 'admin';
   }
 
   logout(): void {
-    localStorage.removeItem(
-      this.tokenKey
-    );
-
-    localStorage.removeItem(
-      this.userKey
-    );
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.userKey);
   }
 
-  private saveAuthData(
-    response: AuthResponse
-  ): void {
+  private saveAuthData(response: AuthResponse): void {
     localStorage.setItem(
       this.tokenKey,
       response.token
