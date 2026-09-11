@@ -9,3 +9,6 @@ dist/
 
 # Angular cache
 .angular/
+
+# Logs
+*.log

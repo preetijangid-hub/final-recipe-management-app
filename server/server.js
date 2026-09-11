@@ -7,6 +7,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const recipeRoutes = require("./routes/recipeRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
 const preferenceRoutes = require("./routes/preferenceRoutes");
 const assistantRoutes = require("./routes/assistantRoutes");
 const adminRoutes = require("./routes/adminRoutes");
@@ -15,6 +16,9 @@ const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 dotenv.config();
 
 const app = express();
+
+// Behind hosting proxies (Render, etc.) so rate limiting sees real client IPs.
+app.set("trust proxy", 1);
 
 connectDB();
 
@@ -50,6 +54,7 @@ app.use("/api", apiLimiter);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/recipes", recipeRoutes);
+app.use("/api/categories", categoryRoutes);
 app.use("/api/preferences", preferenceRoutes);
 app.use("/api/assistant", assistantRoutes);
 app.use("/api/admin", adminRoutes);

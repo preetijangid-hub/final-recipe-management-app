@@ -12,13 +12,14 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, TimeoutError, debounceTime, distinctUntilChanged, finalize, switchMap, timeout } from 'rxjs';
 
-import { Recipe, RecipeListResponse } from '../../models/recipe';
+import { Recipe, RecipeListResponse, CUISINES, MEAL_CATEGORIES } from '../../models/recipe';
 import { AuthService } from '../../services/auth';
 import { RecipeService } from '../../services/recipe';
 
 type RecipePayload = {
   title: string;
   category: string;
+  mealCategory: string;
   ingredients: string[];
   steps: string[];
 };
@@ -43,8 +44,12 @@ export class Recipes {
   readonly loading = signal(true);
   readonly errorMessage = signal('');
 
+  readonly cuisineOptions = CUISINES;
+  readonly mealCategoryOptions = MEAL_CATEGORIES;
+
   search = '';
   category = '';
+  mealCategory = '';
 
   currentPage = 1;
   readonly pageSize = 9;
@@ -75,6 +80,10 @@ export class Recipes {
       '',
       [Validators.required, Validators.minLength(2), Validators.maxLength(50)],
     ],
+    mealCategory: [
+      '',
+      [Validators.required, Validators.minLength(2), Validators.maxLength(50)],
+    ],
     ingredients: this.ingredients,
     steps: this.steps,
   });
@@ -86,6 +95,13 @@ export class Recipes {
         this.category = incomingCategory;
       } else if (params['category'] === '') {
         this.category = '';
+      }
+
+      const incomingMealCategory = (params['mealCategory'] ?? '').toString();
+      if (incomingMealCategory) {
+        this.mealCategory = incomingMealCategory;
+      } else if (params['mealCategory'] === '') {
+        this.mealCategory = '';
       }
 
       const editRecipeId = (params['editRecipeId'] ?? '').toString();
@@ -117,7 +133,7 @@ export class Recipes {
           this.errorMessage.set('');
 
           return this.recipeService
-            .getRecipes(this.currentPage, this.pageSize, this.search, this.category)
+            .getRecipes(this.currentPage, this.pageSize, this.search, this.category, 'newest', this.mealCategory)
             .pipe(
               timeout(10000),
               finalize(() => this.loading.set(false))
@@ -140,7 +156,7 @@ export class Recipes {
     this.errorMessage.set('');
 
     this.recipeService
-      .getRecipes(this.currentPage, this.pageSize, this.search, this.category)
+      .getRecipes(this.currentPage, this.pageSize, this.search, this.category, 'newest', this.mealCategory)
       .pipe(
         timeout(10000),
         finalize(() => {
@@ -181,6 +197,7 @@ export class Recipes {
   clearFilters(): void {
     this.search = '';
     this.category = '';
+    this.mealCategory = '';
     this.currentPage = 1;
     this.refreshRecipes();
   }
@@ -270,7 +287,8 @@ export class Recipes {
 
     this.recipeForm.reset({
       title: recipe.title,
-      category: recipe.category,
+      category: CUISINES.includes(recipe.category) ? recipe.category : '',
+      mealCategory: recipe.mealCategory || '',
     });
     this.fillRows(this.ingredients, recipe.ingredients);
     this.fillRows(this.steps, recipe.steps);
@@ -432,7 +450,7 @@ export class Recipes {
   }
 
   resetForm(): void {
-    this.recipeForm.reset({ title: '', category: '' });
+    this.recipeForm.reset({ title: '', category: '', mealCategory: '' });
     this.fillRows(this.ingredients, ['']);
     this.fillRows(this.steps, ['']);
   }
@@ -464,6 +482,7 @@ export class Recipes {
     return {
       title: this.recipeForm.value.title.trim(),
       category: this.recipeForm.value.category.trim(),
+      mealCategory: this.recipeForm.value.mealCategory.trim(),
       ingredients,
       steps,
     };

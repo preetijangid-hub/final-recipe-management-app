@@ -4,12 +4,37 @@ export interface RatingSummary {
   mine: number | null;
 }
 
+export const CUISINES = [
+  'Indian',
+  'Italian',
+  'Mexican',
+  'Thai',
+  'Chinese',
+  'Japanese',
+  'Korean',
+  'French',
+  'American',
+  'Mediterranean',
+];
+
+export const MEAL_CATEGORIES = [
+  'Breakfast',
+  'Brunch',
+  'Lunch',
+  'Dinner',
+  'Dessert',
+  'Snacks',
+  'Mocktails',
+  'Drinks',
+];
+
 export interface Recipe {
   _id: string;
   title: string;
   ingredients: string[];
   steps: string[];
   category: string;
+  mealCategory: string;
   image?: string;
   spiceLevel?: string;
   sweetnessLevel?: string;

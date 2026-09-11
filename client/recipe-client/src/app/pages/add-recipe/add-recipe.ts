@@ -4,6 +4,7 @@ import { FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFo
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { CUISINES, MEAL_CATEGORIES } from '../../models/recipe';
 import { RecipeService } from '../../services/recipe';
 
 @Component({
@@ -22,6 +23,9 @@ export class AddRecipePage {
   errorMessage = '';
   successMessage = '';
 
+  readonly cuisines = CUISINES;
+  readonly mealCategories = MEAL_CATEGORIES;
+
   get ingredients(): FormArray<FormControl<string | null>> {
     return this.recipeForm.get('ingredients') as FormArray<FormControl<string | null>>;
   }
@@ -33,6 +37,7 @@ export class AddRecipePage {
   readonly recipeForm: FormGroup = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
     category: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+    mealCategory: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
     ingredients: this.fb.array<FormControl<string | null>>([this.fb.control('', Validators.required)]),
     steps: this.fb.array<FormControl<string | null>>([this.fb.control('', Validators.required)]),
     spiceLevel: ['Mild'],
@@ -74,6 +79,7 @@ export class AddRecipePage {
     const payload = {
       title: this.recipeForm.value.title,
       category: this.recipeForm.value.category,
+      mealCategory: this.recipeForm.value.mealCategory,
       ingredients: this.recipeForm.value.ingredients.filter(Boolean),
       steps: this.recipeForm.value.steps.filter(Boolean),
       spiceLevel: this.recipeForm.value.spiceLevel,

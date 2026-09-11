@@ -8,18 +8,18 @@
   </div>
 
   <section class="my-recipes-shell">
-    <div class="state-block loading" *ngIf="loading">
+    <div class="state-block loading" *ngIf="loading()">
       <div class="spinner"></div>
       <p>Loading your recipes...</p>
     </div>
 
-    <div class="state-block error" *ngIf="!loading && errorMessage">
+    <div class="state-block error" *ngIf="!loading() && errorMessage()">
       <span class="state-icon">!</span>
-      <p>{{ errorMessage }}</p>
+      <p>{{ errorMessage() }}</p>
       <button class="primary-button small-button" type="button" (click)="loadMyRecipes()">Retry</button>
     </div>
 
-    <div class="empty-state" *ngIf="!loading && !errorMessage && recipes.length === 0">
+    <div class="empty-state" *ngIf="!loading() && !errorMessage() && recipes().length === 0">
       <span class="state-icon">✦</span>
       <div>
         <h2>No recipes yet</h2>
@@ -28,8 +28,8 @@
       </div>
     </div>
 
-    <div class="recipe-grid" *ngIf="!loading && !errorMessage && recipes.length">
-      <article class="recipe-card" *ngFor="let recipe of recipes">
+    <div class="recipe-grid" *ngIf="!loading() && !errorMessage() && recipes().length">
+      <article class="recipe-card" *ngFor="let recipe of recipes()">
         <div class="recipe-image-wrap">
           <img *ngIf="recipe.image" [src]="recipe.image" alt="" class="recipe-image" />
           <span class="recipe-image-placeholder" *ngIf="!recipe.image">Savoré</span>

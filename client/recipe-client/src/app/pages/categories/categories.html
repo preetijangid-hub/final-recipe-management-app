@@ -2,34 +2,46 @@
   <div class="page-header">
     <div>
       <span class="section-kicker">SAVORÉ CATEGORIES</span>
-      <h1>Browse by category</h1>
+      <h1>Browse recipes</h1>
     </div>
     <a class="icon-button" routerLink="/discover">Discover recipes</a>
   </div>
 
   <section class="categories-shell">
-    <div class="state-block loading" *ngIf="loading">
-      <div class="spinner"></div>
-      <p>Loading categories...</p>
-    </div>
+    <section class="classification-section">
+      <div class="classification-heading">
+        <span class="section-kicker">Cuisines</span>
+        <h2>Explore by cuisine</h2>
+        <p>Every recipe in the collection is tagged with one of these cuisines.</p>
+      </div>
 
-    <div class="state-block error" *ngIf="!loading && errorMessage">
-      <span class="state-icon">!</span>
-      <p>{{ errorMessage }}</p>
-      <button class="primary-button small-button" type="button" (click)="loadCategories()">Retry</button>
-    </div>
+      <div class="category-grid">
+        <div class="category-card" *ngFor="let cuisine of cuisines">
+          <button class="category-main" type="button" (click)="browseCuisine(cuisine)">
+            <span class="category-icon">✦</span>
+            <span class="category-name">{{ cuisine }}</span>
+            <span class="category-arrow">→</span>
+          </button>
+        </div>
+      </div>
+    </section>
 
-    <div class="category-grid" *ngIf="!loading && !errorMessage">
-      <button class="category-card" type="button" *ngFor="let category of categories" (click)="openCategory(category)">
-        <span class="category-icon">✦</span>
-        <span class="category-name">{{ category }}</span>
-        <span class="category-arrow">→</span>
-      </button>
-    </div>
+    <section class="classification-section">
+      <div class="classification-heading">
+        <span class="section-kicker">Meal categories</span>
+        <h2>Explore by meal category</h2>
+        <p>Filter recipes by the meal they fit best.</p>
+      </div>
 
-    <div class="empty-state" *ngIf="!loading && !errorMessage && categories.length === 0">
-      <span class="state-icon">✦</span>
-      <p>No categories are available yet.</p>
-    </div>
+      <div class="category-grid">
+        <div class="category-card" *ngFor="let mealCategory of mealCategories">
+          <button class="category-main" type="button" (click)="browseMealCategory(mealCategory)">
+            <span class="category-icon">✦</span>
+            <span class="category-name">{{ mealCategory }}</span>
+            <span class="category-arrow">→</span>
+          </button>
+        </div>
+      </div>
+    </section>
   </section>
 </section>

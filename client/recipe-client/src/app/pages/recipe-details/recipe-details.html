@@ -89,9 +89,19 @@
 
         <div class="recipe-intro">
 
-          <span class="category">
-            {{ recipe.category }}
-          </span>
+          <div class="classifications">
+
+            <span class="category">
+              <small>Cuisine</small>
+              {{ recipe.category }}
+            </span>
+
+            <span class="category">
+              <small>Meal Category</small>
+              {{ recipe.mealCategory || 'Not set' }}
+            </span>
+
+          </div>
 
           <div class="recipe-title-row">
             <h2>

@@ -2,6 +2,28 @@ const mongoose = require("mongoose");
 
 const SPICE_LEVELS = ["Mild", "Medium", "Hot", "Very Hot"];
 const SWEETNESS_LEVELS = ["Not Sweet", "Lightly Sweet", "Sweet", "Very Sweet"];
+const CUISINES = [
+  "Indian",
+  "Italian",
+  "Mexican",
+  "Thai",
+  "Chinese",
+  "Japanese",
+  "Korean",
+  "French",
+  "American",
+  "Mediterranean",
+];
+const MEAL_CATEGORIES = [
+  "Breakfast",
+  "Brunch",
+  "Lunch",
+  "Dinner",
+  "Dessert",
+  "Snacks",
+  "Mocktails",
+  "Drinks",
+];
 
 const ratingSchema = new mongoose.Schema(
   {
@@ -38,6 +60,14 @@ const recipeSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
+      trim: true,
+    },
+    mealCategory: {
+      // Required for new recipes; existing recipes may not have one.
+      type: String,
+      required: function () {
+        return this.isNew;
+      },
       trim: true,
     },
     image: {
@@ -79,6 +109,7 @@ const recipeSchema = new mongoose.Schema(
 );
 
 recipeSchema.index({ category: 1 });
+recipeSchema.index({ mealCategory: 1 });
 recipeSchema.index({ orderCount: -1 });
 recipeSchema.index({ createdAt: -1 });
 
@@ -87,3 +118,5 @@ const Recipe = mongoose.model("Recipe", recipeSchema);
 module.exports = Recipe;
 module.exports.SPICE_LEVELS = SPICE_LEVELS;
 module.exports.SWEETNESS_LEVELS = SWEETNESS_LEVELS;
+module.exports.CUISINES = CUISINES;
+module.exports.MEAL_CATEGORIES = MEAL_CATEGORIES;

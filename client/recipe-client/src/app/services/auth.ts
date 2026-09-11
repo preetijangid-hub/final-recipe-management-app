@@ -4,6 +4,7 @@ import { Observable, tap } from 'rxjs';
 
 import { AuthResponse } from '../models/auth-response';
 import { User } from '../models/user';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -11,8 +12,7 @@ import { User } from '../models/user';
 export class AuthService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiUrl =
-    'http://localhost:5000/api/auth';
+  private readonly apiUrl = `${environment.apiBaseUrl}/api/auth`;
 
   private readonly tokenKey = 'token';
   private readonly userKey = 'user';

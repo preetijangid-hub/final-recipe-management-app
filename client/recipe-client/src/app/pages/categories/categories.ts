@@ -1,9 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
 
-import { RecipeService } from '../../services/recipe';
+import { CUISINES, MEAL_CATEGORIES } from '../../models/recipe';
 
 @Component({
   selector: 'app-categories',
@@ -12,44 +11,21 @@ import { RecipeService } from '../../services/recipe';
   templateUrl: './categories.html',
   styleUrl: './categories.css',
 })
-export class CategoriesPage implements OnInit {
-  private readonly recipeService = inject(RecipeService);
+export class CategoriesPage {
   private readonly router = inject(Router);
 
-  categories: string[] = [];
-  loading = true;
-  errorMessage = '';
+  readonly cuisines = CUISINES;
+  readonly mealCategories = MEAL_CATEGORIES;
 
-  ngOnInit(): void {
-    this.loadCategories();
-  }
-
-  loadCategories(): void {
-    this.loading = true;
-    this.errorMessage = '';
-
-    this.recipeService
-      .getRecipes(1, 100)
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (response) => {
-          const names = [...new Set(
-            response.recipes
-              .map((recipe) => recipe.category?.trim())
-              .filter((category): category is string => Boolean(category))
-          )].sort((a, b) => a.localeCompare(b));
-
-          this.categories = names;
-        },
-        error: () => {
-          this.errorMessage = 'Unable to load categories right now.';
-        },
-      });
-  }
-
-  openCategory(category: string): void {
+  browseCuisine(name: string): void {
     this.router.navigate(['/discover'], {
-      queryParams: { category },
+      queryParams: { category: name },
+    });
+  }
+
+  browseMealCategory(name: string): void {
+    this.router.navigate(['/discover'], {
+      queryParams: { mealCategory: name },
     });
   }
 }

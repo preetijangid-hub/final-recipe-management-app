@@ -58,6 +58,7 @@ const getAdminStats = async (req, res, next) => {
           _id: plain._id,
           title: plain.title,
           category: plain.category,
+          mealCategory: plain.mealCategory ?? "",
           image: plain.image ?? "",
           spiceLevel: plain.spiceLevel,
           sweetnessLevel: plain.sweetnessLevel,

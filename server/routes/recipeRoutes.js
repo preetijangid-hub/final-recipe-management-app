@@ -13,6 +13,7 @@ const {
   rateRecipe,
   orderRecipe,
 } = require("../controllers/recipeController");
+const { CUISINES, MEAL_CATEGORIES } = require("../models/Recipe");
 
 const protect = require("../middleware/authMiddleware");
 const optionalAuth = require("../middleware/optionalAuth");
@@ -49,8 +50,19 @@ const recipeValidationRules = [
     .trim()
     .notEmpty()
     .withMessage("Category is required.")
-    .isLength({ min: 2, max: 50 })
-    .withMessage("Category must be between 2 and 50 characters."),
+    .isIn(CUISINES)
+    .withMessage(
+      `Category must be one of: ${CUISINES.join(", ")}.`
+    ),
+
+  body("mealCategory")
+    .trim()
+    .notEmpty()
+    .withMessage("Meal category is required.")
+    .isIn(MEAL_CATEGORIES)
+    .withMessage(
+      `Meal category must be one of: ${MEAL_CATEGORIES.join(", ")}.`
+    ),
 
   body("image")
     .optional()

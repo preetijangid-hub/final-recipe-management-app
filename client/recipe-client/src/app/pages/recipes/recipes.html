@@ -103,31 +103,31 @@
         (change)="searchRecipes()"
       >
         <option value="">
-          All categories
+          All cuisines
         </option>
 
-        <option value="Indian">
-          Indian
+        <option
+          *ngFor="let cuisine of cuisineOptions"
+          [value]="cuisine"
+        >
+          {{ cuisine }}
+        </option>
+      </select>
+
+      <select
+        [(ngModel)]="mealCategory"
+        name="mealCategory"
+        (change)="searchRecipes()"
+      >
+        <option value="">
+          All meal categories
         </option>
 
-        <option value="Italian">
-          Italian
-        </option>
-
-        <option value="Mexican">
-          Mexican
-        </option>
-
-        <option value="Chinese">
-          Chinese
-        </option>
-
-        <option value="Dessert">
-          Dessert
-        </option>
-
-        <option value="Breakfast">
-          Breakfast
+        <option
+          *ngFor="let mealCategory of mealCategoryOptions"
+          [value]="mealCategory"
+        >
+          {{ mealCategory }}
         </option>
       </select>
 
@@ -241,6 +241,13 @@
 
               <span class="category-pill">
                 {{ recipe.category }}
+              </span>
+
+              <span
+                class="category-pill"
+                *ngIf="recipe.mealCategory"
+              >
+                {{ recipe.mealCategory }}
               </span>
 
               <div class="owner-badge"
@@ -449,19 +456,28 @@
         </div>
 
 
-        <!-- CATEGORY -->
+        <!-- CUISINE -->
         <div class="form-group">
 
           <label for="add-category">
-            Category
+            Cuisine
           </label>
 
-          <input
+          <select
             id="add-category"
-            type="text"
             formControlName="category"
-            placeholder="e.g. Indian"
-          />
+          >
+            <option value="" disabled>
+              Select a cuisine
+            </option>
+
+            <option
+              *ngFor="let cuisine of cuisineOptions"
+              [value]="cuisine"
+            >
+              {{ cuisine }}
+            </option>
+          </select>
 
           <small
             class="field-error"
@@ -470,8 +486,43 @@
               recipeForm.get('category')?.invalid
             "
           >
-            Category must be between
-            2 and 50 characters.
+            Please select a cuisine.
+          </small>
+
+        </div>
+
+
+        <!-- MEAL CATEGORY -->
+        <div class="form-group">
+
+          <label for="add-mealCategory">
+            Meal Category
+          </label>
+
+          <select
+            id="add-mealCategory"
+            formControlName="mealCategory"
+          >
+            <option value="" disabled>
+              Select a meal category
+            </option>
+
+            <option
+              *ngFor="let mealCategory of mealCategoryOptions"
+              [value]="mealCategory"
+            >
+              {{ mealCategory }}
+            </option>
+          </select>
+
+          <small
+            class="field-error"
+            *ngIf="
+              recipeForm.get('mealCategory')?.touched &&
+              recipeForm.get('mealCategory')?.invalid
+            "
+          >
+            Please select a meal category.
           </small>
 
         </div>
@@ -728,19 +779,28 @@
         </div>
 
 
-        <!-- CATEGORY -->
+        <!-- CUISINE -->
         <div class="form-group">
 
           <label for="edit-category">
-            Category
+            Cuisine
           </label>
 
-          <input
+          <select
             id="edit-category"
-            type="text"
             formControlName="category"
-            placeholder="Recipe category"
-          />
+          >
+            <option value="" disabled>
+              Select a cuisine
+            </option>
+
+            <option
+              *ngFor="let cuisine of cuisineOptions"
+              [value]="cuisine"
+            >
+              {{ cuisine }}
+            </option>
+          </select>
 
           <small
             class="field-error"
@@ -749,8 +809,43 @@
               recipeForm.get('category')?.invalid
             "
           >
-            Category must be between
-            2 and 50 characters.
+            Please select a cuisine.
+          </small>
+
+        </div>
+
+
+        <!-- MEAL CATEGORY -->
+        <div class="form-group">
+
+          <label for="edit-mealCategory">
+            Meal Category
+          </label>
+
+          <select
+            id="edit-mealCategory"
+            formControlName="mealCategory"
+          >
+            <option value="" disabled>
+              Select a meal category
+            </option>
+
+            <option
+              *ngFor="let mealCategory of mealCategoryOptions"
+              [value]="mealCategory"
+            >
+              {{ mealCategory }}
+            </option>
+          </select>
+
+          <small
+            class="field-error"
+            *ngIf="
+              recipeForm.get('mealCategory')?.touched &&
+              recipeForm.get('mealCategory')?.invalid
+            "
+          >
+            Please select a meal category.
           </small>
 
         </div>

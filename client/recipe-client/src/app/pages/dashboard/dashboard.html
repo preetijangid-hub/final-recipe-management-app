@@ -10,61 +10,41 @@
     </div>
   </div>
 
-  <section class="dashboard-grid" *ngIf="!statsLoading && !errorMessage">
+  <section class="dashboard-grid" *ngIf="!statsLoading() && !errorMessage()">
     <article class="stat-card highlight-card">
-      <span class="stat-label">Recipes</span>
-      <span class="stat-number">{{ stats.recipes }}</span>
-      <span class="stat-foot">Savoré collection</span>
-    </article>
-    <article class="stat-card">
-      <span class="stat-label">Orders</span>
-      <span class="stat-number">{{ stats.orders }}</span>
-      <span class="stat-foot">Cooked this month</span>
-    </article>
-    <article class="stat-card">
-      <span class="stat-label">Average rating</span>
-      <span class="stat-number">{{ stats.averageRating | number: '1.1-1' }}</span>
-      <span class="stat-foot">Across all recipes</span>
+      <span class="stat-label">Total recipes</span>
+      <span class="stat-number">{{ stats().recipes }}</span>
+      <span class="stat-foot">Recipes in the collection</span>
     </article>
     <article class="stat-card">
       <span class="stat-label">My recipes</span>
-      <span class="stat-number">{{ stats.mine }}</span>
-      <span class="stat-foot">In your collection</span>
+      <span class="stat-number">{{ stats().mine }}</span>
+      <span class="stat-foot">Recipes created by you</span>
+    </article>
+    <article class="stat-card">
+      <span class="stat-label">Cuisines</span>
+      <span class="stat-number">{{ cuisines.length }}</span>
+      <span class="stat-foot">Available cuisine types</span>
+    </article>
+    <article class="stat-card">
+      <span class="stat-label">Added this week</span>
+      <span class="stat-number">{{ addedThisWeek() }}</span>
+      <span class="stat-foot">Recipes added this week</span>
     </article>
   </section>
 
-  <section class="dashboard-layout">
+  <section class="dashboard-layout" *ngIf="!statsLoading() && !errorMessage()">
     <aside class="left-panel">
       <section class="panel-block">
         <div class="panel-heading">
-          <span class="section-kicker small">Explore by category</span>
+          <span class="section-kicker small">Explore by cuisine</span>
           <a class="text-link" routerLink="/recipes">All recipes</a>
         </div>
         <div class="category-grid">
-          <a class="category-card" *ngFor="let category of categoryCards" [routerLink]="['/recipes']" [queryParams]="{ category: category.name }">
-            <span class="category-icon">{{ category.icon }}</span>
-            <span class="category-name">{{ category.name }}</span>
+          <a class="category-card" *ngFor="let cuisine of cuisines" [routerLink]="['/recipes']" [queryParams]="{ category: cuisine }">
+            <span class="category-icon">✦</span>
+            <span class="category-name">{{ cuisine }}</span>
           </a>
-        </div>
-      </section>
-
-      <section class="panel-block">
-        <div class="panel-heading">
-          <span class="section-kicker small">Food insights</span>
-        </div>
-        <div class="insights-list">
-          <article class="insight-row">
-            <span class="insight-title">Highest rated</span>
-            <span class="insight-value">{{ highestRated.length || '—' }}</span>
-          </article>
-          <article class="insight-row">
-            <span class="insight-title">Most ordered</span>
-            <span class="insight-value">{{ mostOrdered.length || '—' }}</span>
-          </article>
-          <article class="insight-row">
-            <span class="insight-title">Trending</span>
-            <span class="insight-value">{{ trending.length || '—' }}</span>
-          </article>
         </div>
       </section>
     </aside>
@@ -73,69 +53,52 @@
       <section class="hero-feature">
         <div class="hero-copy">
           <span class="section-kicker">FEATURED RECIPE</span>
-          <h2>{{ mostOrdered[0]?.title || 'Find your next favorite' }}</h2>
+          <h2>{{ mostOrdered()[0]?.title || 'Discover something delicious' }}</h2>
+          <p class="hero-text">Explore the recipe collection and find your next favorite dish.</p>
           <div class="hero-meta">
-            <span>{{ mostOrdered[0]?.category || 'Savoré kitchen' }}</span>
-            <span>{{ mostOrdered[0]?.rating?.average || 0 }}/5</span>
-            <span>{{ mostOrdered[0]?.orderCount || 0 }} orders</span>
+            <span>{{ mostOrdered()[0]?.category || 'Savoré kitchen' }}</span>
+            <span>{{ mostOrdered()[0]?.rating?.average || 0 }}/5</span>
+            <span>{{ mostOrdered()[0]?.orderCount || 0 }} orders</span>
           </div>
           <div class="hero-actions">
-            <a class="primary-button" [routerLink]="mostOrdered[0] ? ['/recipes', mostOrdered[0]._id] : ['/recipes']">Start cooking</a>
-            <a class="ghost-button" routerLink="/assistant">Food assistant</a>
+            <a class="primary-button" *ngIf="mostOrdered().length" [routerLink]="['/recipes', mostOrdered()[0]._id]">View Recipe</a>
+            <a class="ghost-button" routerLink="/recipes">Browse Recipes</a>
           </div>
         </div>
         <div class="hero-image-wrap">
-          <img [src]="getRecipeImage(mostOrdered[0] || recentlyAdded[0] || { image: '' })" alt="" class="hero-image">
+          <img [src]="getRecipeImage(mostOrdered()[0] || recentlyAdded()[0] || { image: '' })" alt="" class="hero-image">
         </div>
       </section>
 
-      <section class="recipe-strip">
-        <div class="section-title-row">
-          <div>
-            <span class="section-kicker small">Trending now</span>
-            <h2>Kitchen signals</h2>
-          </div>
-          <a class="text-link" routerLink="/recipes">See all</a>
-        </div>
-        <div class="mini-card-grid">
-          <article class="mini-card" *ngFor="let recipe of trending.slice(0, 4)">
-            <span class="mini-category">{{ recipe.category }}</span>
-            <span class="mini-title">{{ recipe.title }}</span>
-            <span class="mini-meta">{{ recipe.rating?.average ?? 0 }}/5 · {{ recipe.orderCount ?? 0 }} orders</span>
-          </article>
+      <section class="panel-block quick-actions">
+        <span class="section-kicker small">Quick actions</span>
+        <div class="quick-actions-grid">
+          <a class="quick-action" routerLink="/add-recipe">
+            <span class="quick-action-title">Add Recipe</span>
+            <span class="quick-action-text">Create a new recipe</span>
+          </a>
+          <a class="quick-action" routerLink="/recipes">
+            <span class="quick-action-title">Browse Recipes</span>
+            <span class="quick-action-text">Explore the recipe collection</span>
+          </a>
+          <a class="quick-action" routerLink="/categories">
+            <span class="quick-action-title">Manage Categories</span>
+            <span class="quick-action-text">Organize recipe categories</span>
+          </a>
         </div>
       </section>
     </main>
   </section>
 
-  <section class="dashboard-listing" *ngIf="!statsLoading && !errorMessage">
-    <div class="section-title-row">
-      <div>
-        <span class="section-kicker small">Recently added</span>
-        <h2>Fresh from the kitchen</h2>
-      </div>
-    </div>
-    <div class="recipe-grid">
-      <article class="recipe-tile" *ngFor="let recipe of recentlyAdded.slice(0, 4)">
-        <div class="small-image" [style.background-image]="'url(' + getRecipeImage(recipe) + ')'" ></div>
-        <div class="tile-content">
-          <span class="tile-category">{{ recipe.category }}</span>
-          <span class="tile-title">{{ recipe.title }}</span>
-          <span class="tile-meta">{{ getAverage(recipe) }}/5 · {{ getCount(recipe) }} ratings</span>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <section class="state-card" *ngIf="statsLoading">
+  <section class="state-card" *ngIf="statsLoading()">
     <div class="spinner"></div>
     <h3>Loading dashboard...</h3>
   </section>
 
-  <section class="state-card error-state" *ngIf="errorMessage">
+  <section class="state-card error-state" *ngIf="errorMessage()">
     <div class="state-icon">!</div>
     <h3>Unable to load dashboard</h3>
-    <p>{{ errorMessage }}</p>
+    <p>{{ errorMessage() }}</p>
     <button class="primary-button small-button" type="button" (click)="retryDashboard()">Try again</button>
   </section>
 </section>

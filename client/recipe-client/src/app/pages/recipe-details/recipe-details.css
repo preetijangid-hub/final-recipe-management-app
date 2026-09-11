@@ -130,6 +130,18 @@
   text-transform: uppercase;
 }
 
+.category small {
+  display: block;
+  margin-bottom: 2px;
+  opacity: 0.7;
+}
+
+.classifications {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .recipe-intro h2 {
   margin: 18px 0 12px;
   font-family: Georgia, serif;

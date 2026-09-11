@@ -82,7 +82,8 @@ describe("Recipe Authorization API", () => {
         title: "Test Recipe",
         ingredients: ["Ingredient 1", "Ingredient 2"],
         steps: ["Step 1", "Step 2"],
-        category: "Dinner",
+        category: "Indian",
+        mealCategory: "Dinner",
       });
 
     expect(recipeResponse.statusCode).toBe(201);
@@ -95,7 +96,8 @@ describe("Recipe Authorization API", () => {
       title: "Ratings-free Recipe",
       ingredients: ["Ingredient A"],
       steps: ["Step A"],
-      category: "Dinner",
+      category: "Indian",
+      mealCategory: "Dinner",
       user: ownerUserId,
     });
 
@@ -115,7 +117,8 @@ describe("Recipe Authorization API", () => {
         title: "Updated Recipe",
         ingredients: ["Updated Ingredient"],
         steps: ["Updated Step"],
-        category: "Lunch", 
+        category: "Indian",
+        mealCategory: "Lunch",
       });
 
     expect(response.statusCode).toBe(200);
@@ -129,7 +132,8 @@ describe("Recipe Authorization API", () => {
         title: "Unauthorized Update",
         ingredients: ["Ingredient"],
         steps: ["Step"],
-        category: "Lunch",
+        category: "Italian",
+        mealCategory: "Lunch",
       });
 
     expect(response.statusCode).toBe(403);
@@ -143,7 +147,8 @@ describe("Recipe Authorization API", () => {
         title: "Admin Updated Recipe",
         ingredients: ["Admin Ingredient"],
         steps: ["Admin Step"],
-        category: "Dinner",
+        category: "French",
+        mealCategory: "Dinner",
       });
 
     expect(response.statusCode).toBe(200);
@@ -168,6 +173,12 @@ describe("Recipe Authorization API", () => {
   afterAll(async () => {
     await Recipe.deleteMany({
       _id: recipeId,
+    });
+
+    // The ratings-free test document is created mid-suite with the owner
+    // account, so it has to be removed before the test users are deleted.
+    await Recipe.deleteMany({
+      user: ownerUserId,
     });
 
     await User.deleteMany({

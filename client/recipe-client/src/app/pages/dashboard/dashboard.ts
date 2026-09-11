@@ -1,9 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { catchError, finalize, of } from 'rxjs';
 
-import { Recipe, RecipeStatsResponse } from '../../models/recipe';
+import { Recipe, RecipeStatsResponse, CUISINES } from '../../models/recipe';
 import { AuthService } from '../../services/auth';
 import { RecipeService } from '../../services/recipe';
 
@@ -20,89 +20,88 @@ export class Dashboard implements OnInit {
 
   readonly currentUser = this.authService.getStoredUser();
 
-  statsLoading = true;
-  errorMessage = '';
+  readonly cuisines = CUISINES;
 
-  stats: RecipeStatsResponse['totals'] = {
+  readonly statsLoading = signal(true);
+  readonly errorMessage = signal('');
+
+  readonly stats = signal<RecipeStatsResponse['totals']>({
     recipes: 0,
     orders: 0,
     averageRating: 0,
     mine: 0,
-  };
-
-  mostOrdered: Recipe[] = [];
-  highestRated: Recipe[] = [];
-  trending: Recipe[] = [];
-  spicyFavorites: Recipe[] = [];
-  sweetFavorites: Recipe[] = [];
-  recentlyAdded: Recipe[] = [];
-
-  readonly categoryCards = [
-    { name: 'Indian', icon: '🌶️' },
-    { name: 'Italian', icon: '🍝' },
-    { name: 'Mexican', icon: '🌮' },
-    { name: 'Chinese', icon: '🥢' },
-    { name: 'Dessert', icon: '🍰' },
-    { name: 'Breakfast', icon: '🥐' },
-  ];
+  });
+  readonly mostOrdered = signal<Recipe[]>([]);
+  readonly recentlyAdded = signal<Recipe[]>([]);
+  readonly addedThisWeek = signal(0);
 
   ngOnInit(): void {
     this.loadDashboard();
   }
 
-  private loadDashboard(): void {
-    this.statsLoading = true;
-    this.errorMessage = '';
+  loadDashboard(): void {
+    this.statsLoading.set(true);
+    this.errorMessage.set('');
 
     this.recipeService
       .getRecipeStats()
       .pipe(
         catchError(() => {
-          this.errorMessage = 'Unable to load Savoré dashboard insights.';
-          return of({
-            totals: this.stats,
-            mostOrdered: [],
-            highestRated: [],
-            trending: [],
-            spicyFavorites: [],
-            sweetFavorites: [],
-            recentlyAdded: [],
-          } as RecipeStatsResponse);
+          this.errorMessage.set('Unable to load Savoré dashboard insights.');
+          return of(null);
         }),
-        finalize(() => {
-          this.statsLoading = false;
-        })
+        finalize(() => this.statsLoading.set(false))
       )
-      .subscribe({
-        next: (response) => {
-          if (!response) {
-            return;
-          }
+      .subscribe((response) => {
+        if (!response) {
+          return;
+        }
 
-          this.stats = response.totals;
-          this.mostOrdered = response.mostOrdered;
-          this.highestRated = response.highestRated;
-          this.trending = response.trending;
-          this.spicyFavorites = response.spicyFavorites;
-          this.sweetFavorites = response.sweetFavorites;
-          this.recentlyAdded = response.recentlyAdded;
-        },
+        this.stats.set(response.totals);
+        this.mostOrdered.set(response.mostOrdered);
+        this.recentlyAdded.set(response.recentlyAdded);
       });
+
+    this.loadAddedThisWeek();
   }
 
   retryDashboard(): void {
     this.loadDashboard();
   }
 
-  getRecipeImage(recipe: Recipe): string {
-    return recipe.image || 'https://images.unsplash.com/photo-1498654896290-37a665833e4a?auto=format&fit=crop&w=1000&q=80';
+  getRecipeImage(recipe: { image?: string }): string {
+    const image = recipe.image?.trim() ?? '';
+
+    if (!image || !Dashboard.isImageSource(image)) {
+      return '/images/delicious-food.jpg';
+    }
+
+    return image;
   }
 
-  getAverage(recipe: Recipe): number {
-    return recipe.rating?.average ?? 0;
+  private static isImageSource(value: string): boolean {
+    if (value.startsWith('data:image/')) {
+      return true;
+    }
+
+    return /\.(jpe?g|png|gif|webp|avif|svg|bmp|ico)(\?.*)?(#.*)?$/i.test(value);
   }
 
-  getCount(recipe: Recipe): number {
-    return recipe.rating?.count ?? 0;
+  private loadAddedThisWeek(): void {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+
+    this.recipeService
+      .getRecipes(1, 50)
+      .pipe(catchError(() => of({ recipes: [] })))
+      .subscribe((response) => {
+        this.addedThisWeek.set(
+          response.recipes.filter(
+            (recipe) => recipe.createdAt && new Date(recipe.createdAt) >= weekStart
+          ).length
+        );
+      });
   }
 }

@@ -1,9 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import {
+  catchError,
+  finalize,
+  of,
+  timeout,
+} from 'rxjs';
 
-import { Recipe, RecipeListResponse } from '../../models/recipe';
+import { Recipe } from '../../models/recipe';
 import { AuthService } from '../../services/auth';
 import { RecipeService } from '../../services/recipe';
 
@@ -20,33 +25,54 @@ export class MyRecipesPage implements OnInit {
 
   readonly currentUser = this.authService.getStoredUser();
 
-  recipes: Recipe[] = [];
-  loading = true;
-  errorMessage = '';
+  readonly recipes = signal<Recipe[]>([]);
+  readonly loading = signal(true);
+  readonly errorMessage = signal('');
 
   ngOnInit(): void {
     this.loadMyRecipes();
   }
 
   loadMyRecipes(): void {
-    this.loading = true;
-    this.errorMessage = '';
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.recipes.set([]);
 
     this.recipeService
       .getMyRecipes()
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (response) => {
-          this.recipes = response.recipes ?? [];
-        },
-        error: () => {
-          this.errorMessage = 'Unable to load your recipes.';
-        },
+      .pipe(
+        timeout(10000),
+        catchError((error) => {
+          if (error?.name === 'TimeoutError') {
+            this.errorMessage.set(
+              'The request is taking too long. Please check that the backend is running.'
+            );
+          } else if (error?.status === 401) {
+            this.errorMessage.set(
+              'Your session has expired. Please log in again.'
+            );
+          } else if (error?.error?.message) {
+            this.errorMessage.set(error.error.message);
+          } else {
+            this.errorMessage.set('Unable to load your recipes.');
+          }
+
+          this.recipes.set([]);
+
+          return of({
+            recipes: [],
+          });
+        }),
+        finalize(() => this.loading.set(false))
+      )
+      .subscribe((response) => {
+        this.recipes.set(response?.recipes ?? []);
       });
   }
 
   canManage(recipe: Recipe): boolean {
     const user = this.currentUser;
+
     if (!user) {
       return false;
     }
@@ -55,14 +81,44 @@ export class MyRecipesPage implements OnInit {
       return true;
     }
 
-    const owner = typeof recipe.user === 'string' ? recipe.user : recipe.user?._id;
-    return owner === user._id;
+    const currentUserId =
+      user._id ||
+      (user as UserWithId).id ||
+      '';
+
+    const ownerId =
+      typeof recipe.user === 'string'
+        ? recipe.user
+        : recipe.user?._id;
+
+    return ownerId === currentUserId;
   }
 
   deleteRecipe(recipeId: string): void {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this recipe?'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.errorMessage.set('');
+
     this.recipeService.deleteRecipe(recipeId).subscribe({
-      next: () => this.loadMyRecipes(),
-      error: () => this.errorMessage = 'Unable to delete recipe.',
+      next: () => {
+        this.loadMyRecipes();
+      },
+      error: (error) => {
+        this.errorMessage.set(
+          error?.error?.message ||
+            'Unable to delete recipe.'
+        );
+      },
     });
   }
+}
+
+interface UserWithId {
+  id?: string;
 }

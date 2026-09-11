@@ -25,8 +25,19 @@
         </div>
 
         <div class="field-row">
-          <label for="category">Category</label>
-          <input id="category" formControlName="category" placeholder="Indian" />
+          <label for="category">Cuisine</label>
+          <select id="category" formControlName="category">
+            <option value="" disabled>Select a cuisine</option>
+            <option *ngFor="let cuisine of cuisines" [value]="cuisine">{{ cuisine }}</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <label for="mealCategory">Meal Category</label>
+          <select id="mealCategory" formControlName="mealCategory">
+            <option value="" disabled>Select a meal category</option>
+            <option *ngFor="let mealCategory of mealCategories" [value]="mealCategory">{{ mealCategory }}</option>
+          </select>
         </div>
 
         <div class="field-row">

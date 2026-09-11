@@ -13,6 +13,7 @@ import {
   RecipeListResponse,
   RecipeStatsResponse,
 } from '../models/recipe';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -21,14 +22,15 @@ export class RecipeService {
   private readonly http = inject(HttpClient);
 
   private readonly apiUrl =
-    'http://localhost:5000/api/recipes';
+    `${environment.apiBaseUrl}/api/recipes`;
 
   getRecipes(
     page = 1,
     limit = 10,
     search = '',
     category = '',
-    sort = 'newest'
+    sort = 'newest',
+    mealCategory = ''
   ): Observable<RecipeListResponse> {
     let params = new HttpParams()
       .set('page', page)
@@ -46,6 +48,13 @@ export class RecipeService {
       params = params.set(
         'category',
         category.trim()
+      );
+    }
+
+    if (mealCategory.trim()) {
+      params = params.set(
+        'mealCategory',
+        mealCategory.trim()
       );
     }
 
@@ -89,6 +98,7 @@ export class RecipeService {
       ingredients: string[];
       steps: string[];
       category: string;
+      mealCategory: string;
       image?: string;
       spiceLevel?: string;
       sweetnessLevel?: string;
@@ -107,6 +117,7 @@ export class RecipeService {
       ingredients: string[];
       steps: string[];
       category: string;
+      mealCategory: string;
       image?: string;
       spiceLevel?: string;
       sweetnessLevel?: string;
@@ -156,20 +167,20 @@ export class RecipeService {
     }>;
   }> {
     return this.http.post<any>(
-      'http://localhost:5000/api/assistant/chat',
+      `${environment.apiBaseUrl}/api/assistant/chat`,
       { message }
     );
   }
 
   getPreferences(): Observable<{ preferences: any }> {
     return this.http.get<{ preferences: any }>(
-      'http://localhost:5000/api/preferences'
+      `${environment.apiBaseUrl}/api/preferences`
     );
   }
 
   updatePreferences(payload: any): Observable<{ preferences: any; message: string }> {
     return this.http.put<{ preferences: any; message: string }>(
-      'http://localhost:5000/api/preferences',
+      `${environment.apiBaseUrl}/api/preferences`,
       payload
     );
   }
