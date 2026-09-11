@@ -4,5 +4,5 @@
 // backend URL here before building, e.g. 'https://savore-api.onrender.com'.
 export const environment = {
   production: true,
-  apiBaseUrl: '',
+  apiBaseUrl: 'https://savore-lz8a.onrender.com/api',
 };
