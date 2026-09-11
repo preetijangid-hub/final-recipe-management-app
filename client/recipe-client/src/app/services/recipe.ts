@@ -22,7 +22,7 @@ export class RecipeService {
   private readonly http = inject(HttpClient);
 
   private readonly apiUrl =
-    `${environment.apiBaseUrl}/api/recipes`;
+    `${environment.apiBaseUrl}/recipes`;
 
   getRecipes(
     page = 1,
@@ -167,20 +167,20 @@ export class RecipeService {
     }>;
   }> {
     return this.http.post<any>(
-      `${environment.apiBaseUrl}/api/assistant/chat`,
+      `${environment.apiBaseUrl}/assistant/chat`,
       { message }
     );
   }
 
   getPreferences(): Observable<{ preferences: any }> {
     return this.http.get<{ preferences: any }>(
-      `${environment.apiBaseUrl}/api/preferences`
+      `${environment.apiBaseUrl}/preferences`
     );
   }
 
   updatePreferences(payload: any): Observable<{ preferences: any; message: string }> {
     return this.http.put<{ preferences: any; message: string }>(
-      `${environment.apiBaseUrl}/api/preferences`,
+      `${environment.apiBaseUrl}/preferences`,
       payload
     );
   }

@@ -15,7 +15,7 @@ import { environment } from '../../environments/environment';
 export class CategoryService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiUrl = `${environment.apiBaseUrl}/api/categories`;
+  private readonly apiUrl = `${environment.apiBaseUrl}/categories`;
 
   getCategories(): Observable<CategoryListResponse> {
     return this.http.get<CategoryListResponse>(this.apiUrl);

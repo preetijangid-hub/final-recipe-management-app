@@ -29,7 +29,7 @@ describe('RecipeService', () => {
       .subscribe();
 
     const request = httpTesting.expectOne(
-      (req) => req.url === `${environment.apiBaseUrl}/api/recipes`
+      (req) => req.url === `${environment.apiBaseUrl}/recipes`
     );
 
     expect(request.request.method).toBe('GET');
@@ -50,7 +50,7 @@ describe('RecipeService', () => {
     service.getRecipes().subscribe();
 
     const request = httpTesting.expectOne(
-      (req) => req.url === `${environment.apiBaseUrl}/api/recipes`
+      (req) => req.url === `${environment.apiBaseUrl}/recipes`
     );
 
     expect(request.request.params.get('search')).toBeNull();
@@ -75,7 +75,7 @@ describe('RecipeService', () => {
       .subscribe();
 
     const request = httpTesting.expectOne(
-      `${environment.apiBaseUrl}/api/recipes`
+      `${environment.apiBaseUrl}/recipes`
     );
 
     expect(request.request.method).toBe('POST');

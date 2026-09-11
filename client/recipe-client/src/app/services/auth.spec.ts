@@ -47,7 +47,7 @@ describe('AuthService', () => {
       .subscribe((result) => (response = result));
 
     const request = httpTesting.expectOne(
-      `${environment.apiBaseUrl}/api/auth/login`
+      `${environment.apiBaseUrl}/auth/login`
     );
 
     expect(request.request.method).toBe('POST');
@@ -71,7 +71,7 @@ describe('AuthService', () => {
     service.getCurrentUser().subscribe((result) => (response = result));
 
     const request = httpTesting.expectOne(
-      `${environment.apiBaseUrl}/api/auth/me`
+      `${environment.apiBaseUrl}/auth/me`
     );
 
     expect(request.request.method).toBe('GET');
