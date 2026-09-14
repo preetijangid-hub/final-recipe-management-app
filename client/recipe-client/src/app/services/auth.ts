@@ -75,7 +75,7 @@ export class AuthService {
     }
 
     try {
-      return JSON.parse(user) as User;
+      return JSON.parse(user) as User; 
     } catch {
       return null;
     }
@@ -96,7 +96,7 @@ export class AuthService {
 
   private saveAuthData(response: AuthResponse): void {
     localStorage.setItem(
-      this.tokenKey,
+      this.tokenKey, 
       response.token
     );
 

@@ -92,7 +92,7 @@ export class Register {
           this.loading = false;
           this.router.navigate(['/dashboard']);
         },
-        error: (error) => {
+        error: (error) => { 
           this.loading = false;
 
           this.errorMessage =

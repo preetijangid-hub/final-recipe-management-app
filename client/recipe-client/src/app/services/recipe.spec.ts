@@ -74,7 +74,7 @@ describe('RecipeService', () => {
       })
       .subscribe();
 
-    const request = httpTesting.expectOne(
+    const request = httpTesting.expectOne( 
       `${environment.apiBaseUrl}/recipes`
     );
 

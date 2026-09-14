@@ -7,7 +7,7 @@ import {
   CategoryListResponse,
   CategoryMutationResponse,
 } from '../models/category';
-import { environment } from '../../environments/environment';
+import { environment } from '../../environments/environment'; 
 
 @Injectable({
   providedIn: 'root',

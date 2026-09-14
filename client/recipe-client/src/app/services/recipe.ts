@@ -16,7 +16,7 @@ import {
 import { environment } from '../../environments/environment';
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root', 
 })
 export class RecipeService {
   private readonly http = inject(HttpClient);
@@ -115,7 +115,7 @@ export class RecipeService {
     recipe: {
       title: string;
       ingredients: string[];
-      steps: string[];
+      steps: string[]; 
       category: string;
       mealCategory: string;
       image?: string;
@@ -123,7 +123,7 @@ export class RecipeService {
       sweetnessLevel?: string;
     }
   ): Observable<{ recipe: Recipe }> {
-    return this.http.put<{ recipe: Recipe }>(
+    return this.http.put<{ recipe: Recipe }>( 
       `${this.apiUrl}/${id}`,
       recipe
     );
@@ -141,7 +141,7 @@ export class RecipeService {
     id: string,
     value: number
   ): Observable<RateResponse> {
-    return this.http.post<RateResponse>(
+    return this.http.post<RateResponse>( 
       `${this.apiUrl}/${id}/rating`,
       { value }
     );
@@ -184,4 +184,4 @@ export class RecipeService {
       payload
     );
   }
-}
+} 
