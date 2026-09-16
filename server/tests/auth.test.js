@@ -1,5 +1,5 @@
 const request = require("supertest");
-const mongoose = require("mongoose");
+
 const app = require("../server");
 
 describe("Authentication API", () => {
@@ -20,7 +20,7 @@ describe("Authentication API", () => {
     expect(response.body).toHaveProperty("user");
   });
 
-  test("should login with valid credentials", async () => {  
+  test("should login with valid credentials", async () => {
     const response = await request(app)
       .post("/api/auth/login")
       .send({
@@ -32,7 +32,7 @@ describe("Authentication API", () => {
     expect(response.body).toHaveProperty("token");
   });
 
-  test("should reject invalid login credentials", async () => { 
+  test("should reject invalid login credentials", async () => {
     const response = await request(app)
       .post("/api/auth/login")
       .send({
@@ -41,7 +41,7 @@ describe("Authentication API", () => {
       });
 
     expect(response.statusCode).toBe(401);
-  });  
+  });
 
   test("should reject invalid registration data", async () => {
     const response = await request(app)
@@ -53,9 +53,6 @@ describe("Authentication API", () => {
       });
 
     expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty("errors");
   });
-
-  afterAll(async () => {
-    await mongoose.connection.close();
-  }); 
 });
