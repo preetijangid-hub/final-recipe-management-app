@@ -2,7 +2,7 @@
   <div class="page-header">
     <div>
       <span class="section-kicker">SAVORÉ KITCHEN</span>
-      <h1>Add recipe</h1>
+      <h1>{{ heading }}</h1>
     </div>
   </div>
 
@@ -28,7 +28,7 @@
           <label for="category">Cuisine</label>
           <select id="category" formControlName="category">
             <option value="" disabled>Select a cuisine</option>
-            <option *ngFor="let cuisine of cuisines" [value]="cuisine">{{ cuisine }}</option>
+            <option *ngFor="let cuisine of categoryOptions" [value]="cuisine">{{ cuisine }}</option>
           </select>
         </div>
 
@@ -36,7 +36,7 @@
           <label for="mealCategory">Meal Category</label>
           <select id="mealCategory" formControlName="mealCategory">
             <option value="" disabled>Select a meal category</option>
-            <option *ngFor="let mealCategory of mealCategories" [value]="mealCategory">{{ mealCategory }}</option>
+            <option *ngFor="let mealCategory of mealCategoryOptions" [value]="mealCategory">{{ mealCategory }}</option>
           </select>
         </div>
 
@@ -89,9 +89,8 @@
       </div>
 
       <div class="form-actions">
-        <button class="primary-button" type="submit" [disabled]="saving">
-          <span *ngIf="!saving">Create recipe</span>
-          <span *ngIf="saving">Creating...</span>
+        <button class="primary-button" type="submit" [disabled]="saving || loadingRecipe">
+          <span>{{ submitLabel }}</span>
         </button>
       </div>
     </form>

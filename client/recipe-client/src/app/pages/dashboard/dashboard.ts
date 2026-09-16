@@ -73,11 +73,23 @@ export class Dashboard implements OnInit {
     const image = recipe.image?.trim() ?? '';
 
     if (!image || !Dashboard.isImageSource(image)) {
-      return '/images/delicious-food.jpg';
+      return Dashboard.fallbackImage;
     }
 
     return image;
   }
+
+  onHeroImageError(event: Event): void {
+    const imageElement = event.target as HTMLImageElement | null;
+
+    if (!imageElement || imageElement.src.endsWith(Dashboard.fallbackImage)) {
+      return;
+    }
+
+    imageElement.src = Dashboard.fallbackImage;
+  }
+
+  private static fallbackImage = '/images/delicious-food.jpg';
 
   private static isImageSource(value: string): boolean {
     if (value.startsWith('data:image/')) {

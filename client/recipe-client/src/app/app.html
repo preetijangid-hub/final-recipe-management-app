@@ -13,7 +13,7 @@
       <a class="nav-link" routerLink="/recipes" routerLinkActive="active">Recipes</a>
       <a class="nav-link" routerLink="/categories" routerLinkActive="active">Categories</a>
       <a class="nav-link" routerLink="/my-recipes" routerLinkActive="active">My Recipes</a>
-      <a class="nav-link" routerLink="/add-recipe" routerLinkActive="active">Add Recipe</a>
+      <a class="nav-link" [class.active]="addRecipeLinkActive" routerLink="/add-recipe">Add Recipe</a>
       <a class="nav-link" routerLink="/food-assistant" routerLinkActive="active">Food Assistant</a>
     </nav>
 

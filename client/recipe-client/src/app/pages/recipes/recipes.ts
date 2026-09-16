@@ -10,7 +10,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subject, TimeoutError, debounceTime, distinctUntilChanged, finalize, switchMap, timeout } from 'rxjs';
+import { Subject, TimeoutError, catchError, debounceTime, distinctUntilChanged, finalize, of, switchMap, timeout } from 'rxjs';
 
 import { Recipe, RecipeListResponse, CUISINES, MEAL_CATEGORIES } from '../../models/recipe';
 import { AuthService } from '../../services/auth';
@@ -136,12 +136,23 @@ export class Recipes {
             .getRecipes(this.currentPage, this.pageSize, this.search, this.category, 'newest', this.mealCategory)
             .pipe(
               timeout(10000),
+              catchError((error) => {
+                this.errorMessage.set(
+                  this.getErrorMessage(error, 'Unable to load recipes. Please try again.')
+                );
+
+                return of(null);
+              }),
               finalize(() => this.loading.set(false))
             );
         })
       )
       .subscribe({
         next: (response) => {
+          if (!response) {
+            return;
+          }
+
           this.recipes.set(response.recipes);
           this.pagination.set(response.pagination);
         },
