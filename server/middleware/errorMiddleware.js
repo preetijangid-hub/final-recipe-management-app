@@ -8,13 +8,20 @@ const notFound = (req, res, next) => {
 const errorHandler = (err, req, res, next) => {
   console.error(err);
 
-  const statusCode =
+  let statusCode =
     res.statusCode >= 400 && res.statusCode < 600
       ? res.statusCode
       : 500;
 
+  let message = err.message || "Internal server error.";
+
+  if (err.name === "CastError") {
+    statusCode = 400;
+    message = "Invalid recipe ID.";
+  }
+
   res.status(statusCode).json({
-    message: err.message || "Internal server error.",
+    message,
   });
 };
 
