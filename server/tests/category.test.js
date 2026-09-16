@@ -16,7 +16,7 @@ describe("Category Management API", () => {
   let categoryId;
 
   beforeAll(async () => {
-    const adminRegister = await request(app) 
+    const adminRegister = await request(app)
       .post("/api/auth/register")
       .send({
         name: "Category Admin",
@@ -38,6 +38,7 @@ describe("Category Management API", () => {
       });
 
     expect(adminLogin.statusCode).toBe(200);
+
     adminToken = adminLogin.body.token;
 
     const userRegister = await request(app)
@@ -49,6 +50,7 @@ describe("Category Management API", () => {
       });
 
     expect(userRegister.statusCode).toBe(201);
+
     userToken = userRegister.body.token;
   });
 
@@ -56,7 +58,9 @@ describe("Category Management API", () => {
     const response = await request(app)
       .post("/api/categories")
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ name: "  Test Cuisine  " });
+      .send({
+        name: "  Test Cuisine  ",
+      });
 
     expect(response.statusCode).toBe(201);
     expect(response.body.category.name).toBe("Test Cuisine");
@@ -70,7 +74,9 @@ describe("Category Management API", () => {
     const response = await request(app)
       .post("/api/categories")
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ name: "test cuisine" });
+      .send({
+        name: "test cuisine",
+      });
 
     expect(response.statusCode).toBe(409);
   });
@@ -79,7 +85,9 @@ describe("Category Management API", () => {
     const response = await request(app)
       .post("/api/categories")
       .set("Authorization", `Bearer ${userToken}`)
-      .send({ name: "User Category" });
+      .send({
+        name: "User Category",
+      });
 
     expect(response.statusCode).toBe(403);
   });
@@ -102,7 +110,9 @@ describe("Category Management API", () => {
     const response = await request(app)
       .post("/api/categories")
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ name: "x" });
+      .send({
+        name: "x",
+      });
 
     expect(response.statusCode).toBe(400);
   });
@@ -120,11 +130,14 @@ describe("Category Management API", () => {
     const response = await request(app)
       .put(`/api/categories/${categoryId}`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .send({ name: "Fusion Test" });
+      .send({
+        name: "Fusion Test",
+      });
 
     expect(response.statusCode).toBe(200);
 
     const updatedRecipe = await Recipe.findById(recipe._id);
+
     expect(updatedRecipe.category).toBe("Fusion Test");
 
     await Recipe.findByIdAndDelete(recipe._id);
@@ -160,13 +173,15 @@ describe("Category Management API", () => {
 
   afterAll(async () => {
     await Category.deleteMany({
-      name: { $in: ["Test Cuisine", "Fusion Test"] },
+      name: {
+        $in: ["Test Cuisine", "Fusion Test"],
+      },
     });
 
     await User.deleteMany({
-      email: { $in: [adminEmail, userEmail] },
+      email: {
+        $in: [adminEmail, userEmail],
+      },
     });
-
-    await mongoose.connection.close();
   });
 });

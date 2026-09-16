@@ -17,10 +17,11 @@ dotenv.config();
 
 const app = express();
 
-// Behind hosting proxies (Render, etc.) so rate limiting sees real client IPs.
 app.set("trust proxy", 1);
 
-connectDB();
+if (process.env.NODE_ENV !== "test") {
+  connectDB();
+}
 
 app.use(helmet());
 

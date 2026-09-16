@@ -1,24 +1,23 @@
 const request = require("supertest");
-const mongoose = require("mongoose");
+
 const app = require("../server");
 const Recipe = require("../models/Recipe");
 const User = require("../models/User");
 
-describe("Recipe Authorization API", () => { 
+describe("Recipe Authorization API", () => {
   let ownerToken;
   let ownerUserId;
   let otherUserToken;
   let adminToken;
-  let recipeId;  
+  let recipeId;
 
-  const password = "Test@12345";  
+  const password = "Test@12345";
 
   const ownerEmail = `owner${Date.now()}@example.com`;
   const otherEmail = `other${Date.now()}@example.com`;
   const adminEmail = `admin${Date.now()}@example.com`;
 
   beforeAll(async () => {
-    // Create recipe owner
     const ownerResponse = await request(app)
       .post("/api/auth/register")
       .send({
@@ -32,7 +31,6 @@ describe("Recipe Authorization API", () => {
     ownerToken = ownerResponse.body.token;
     ownerUserId = ownerResponse.body.user.id;
 
-    // Create another user
     const otherResponse = await request(app)
       .post("/api/auth/register")
       .send({
@@ -45,10 +43,9 @@ describe("Recipe Authorization API", () => {
 
     otherUserToken = otherResponse.body.token;
 
-    // Create admin user
     const adminResponse = await request(app)
       .post("/api/auth/register")
-      .send({   
+      .send({
         name: "Admin User",
         email: adminEmail,
         password,
@@ -62,7 +59,6 @@ describe("Recipe Authorization API", () => {
       role: "admin",
     });
 
-    // Login again so token contains authenticated admin user
     const adminLoginResponse = await request(app)
       .post("/api/auth/login")
       .send({
@@ -74,7 +70,6 @@ describe("Recipe Authorization API", () => {
 
     adminToken = adminLoginResponse.body.token;
 
-    // Create recipe owned by owner
     const recipeResponse = await request(app)
       .post("/api/recipes")
       .set("Authorization", `Bearer ${ownerToken}`)
@@ -89,6 +84,45 @@ describe("Recipe Authorization API", () => {
     expect(recipeResponse.statusCode).toBe(201);
 
     recipeId = recipeResponse.body.recipe._id;
+  });
+
+  test("should reject recipe creation without authentication", async () => {
+    const response = await request(app)
+      .post("/api/recipes")
+      .send({
+        title: "Unauthorized Recipe",
+        ingredients: ["Ingredient"],
+        steps: ["Step"],
+        category: "Indian",
+        mealCategory: "Dinner",
+      });
+
+    expect(response.statusCode).toBe(401);
+  });
+
+  test("should reject invalid recipe data", async () => {
+    const response = await request(app)
+      .post("/api/recipes")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({
+        title: "",
+        ingredients: [],
+        steps: [],
+        category: "",
+        mealCategory: "",
+      });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty("errors");
+  });
+
+  test("should reject an invalid recipe ID", async () => {
+    const response = await request(app)
+      .get("/api/recipes/abc")
+      .set("Authorization", `Bearer ${ownerToken}`);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.message).toBe("Invalid recipe ID.");
   });
 
   test("GET /api/recipes should not fail when a recipe document has no ratings field", async () => {
@@ -127,7 +161,7 @@ describe("Recipe Authorization API", () => {
   test("non-owner should not be able to update another user's recipe", async () => {
     const response = await request(app)
       .put(`/api/recipes/${recipeId}`)
-      .set("Authorization", `Bearer ${otherUserToken}`)     
+      .set("Authorization", `Bearer ${otherUserToken}`)
       .send({
         title: "Unauthorized Update",
         ingredients: ["Ingredient"],
@@ -172,12 +206,6 @@ describe("Recipe Authorization API", () => {
 
   afterAll(async () => {
     await Recipe.deleteMany({
-      _id: recipeId,
-    });
-
-    // The ratings-free test document is created mid-suite with the owner
-    // account, so it has to be removed before the test users are deleted.
-    await Recipe.deleteMany({
       user: ownerUserId,
     });
 
@@ -186,7 +214,5 @@ describe("Recipe Authorization API", () => {
         $in: [ownerEmail, otherEmail, adminEmail],
       },
     });
-
-    await mongoose.connection.close();
   });
 });
