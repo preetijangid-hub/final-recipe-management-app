@@ -70,11 +70,14 @@ const toObjectId = (userId) =>
     ? new mongoose.Types.ObjectId(String(userId))
     : null;
 
+const escapeRegex = (value) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const buildFilter = (search, category, mealCategory) => {
   const filter = {};
 
   if (search.trim()) {
-    const term = search.trim();
+    const term = escapeRegex(search.trim());
 
     filter.$or = [
       {
@@ -100,14 +103,14 @@ const buildFilter = (search, category, mealCategory) => {
 
   if (category.trim()) {
     filter.category = {
-      $regex: category.trim(),
+      $regex: escapeRegex(category.trim()),
       $options: "i",
     };
   }
 
   if (mealCategory.trim()) {
     filter.mealCategory = {
-      $regex: mealCategory.trim(),
+      $regex: escapeRegex(mealCategory.trim()),
       $options: "i",
     };
   }
