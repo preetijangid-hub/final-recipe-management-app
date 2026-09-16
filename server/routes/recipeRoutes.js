@@ -13,10 +13,12 @@ const {
   rateRecipe,
   orderRecipe,
 } = require("../controllers/recipeController");
+
 const { CUISINES, MEAL_CATEGORIES } = require("../models/Recipe");
 
 const protect = require("../middleware/authMiddleware");
 const optionalAuth = require("../middleware/optionalAuth");
+const validateRequest = require("../middleware/validationMiddleware");
 
 const router = express.Router();
 
@@ -51,9 +53,7 @@ const recipeValidationRules = [
     .notEmpty()
     .withMessage("Category is required.")
     .isIn(CUISINES)
-    .withMessage(
-      `Category must be one of: ${CUISINES.join(", ")}.`
-    ),
+    .withMessage(`Category must be one of: ${CUISINES.join(", ")}.`),
 
   body("mealCategory")
     .trim()
@@ -86,7 +86,12 @@ const ratingValidation = [
 router
   .route("/")
   .get(optionalAuth, getRecipes)
-  .post(protect, recipeValidationRules, createRecipe);
+  .post(
+    protect,
+    recipeValidationRules,
+    validateRequest,
+    createRecipe
+  );
 
 router.get("/stats", protect, getRecipeStats);
 router.get("/mine", protect, getMyRecipes);
@@ -94,23 +99,42 @@ router.get("/mine", protect, getMyRecipes);
 router
   .route("/:id")
   .get(optionalAuth, getRecipeById)
-  .put(protect, recipeIdValidation, recipeValidationRules, updateRecipe)
-  .delete(protect, recipeIdValidation, deleteRecipe);
+  .put(
+    protect,
+    recipeIdValidation,
+    recipeValidationRules,
+    validateRequest,
+    updateRecipe
+  )
+  .delete(
+    protect,
+    recipeIdValidation,
+    validateRequest,
+    deleteRecipe
+  );
 
 router.post(
   "/:id/rating",
   protect,
   recipeIdValidation,
   ratingValidation,
+  validateRequest,
   rateRecipe
 );
 
-router.post("/:id/order", protect, recipeIdValidation, orderRecipe);
+router.post(
+  "/:id/order",
+  protect,
+  recipeIdValidation,
+  validateRequest,
+  orderRecipe
+);
 
 router.get(
   "/:id/compatibility",
   protect,
   recipeIdValidation,
+  validateRequest,
   getRecipeCompatibility
 );
 
