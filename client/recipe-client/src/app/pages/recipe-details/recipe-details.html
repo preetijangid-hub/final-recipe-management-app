@@ -76,11 +76,18 @@
 
         <div class="recipe-visual">
 
-          <div class="plate-icon">
+          <img
+            class="recipe-photo"
+            *ngIf="recipe.image"
+            [src]="recipe.image"
+            alt=""
+          />
+
+          <div class="plate-icon" *ngIf="!recipe.image">
             🍴
           </div>
 
-          <span class="visual-label">
+          <span class="visual-label" *ngIf="!recipe.image">
             SAVORÉ
           </span>
 

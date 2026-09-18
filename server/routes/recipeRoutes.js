@@ -22,7 +22,7 @@ const validateRequest = require("../middleware/validationMiddleware");
 
 const router = express.Router();
 
-const recipeValidationRules = [
+const recipeFieldRules = [
   body("title")
     .trim()
     .notEmpty()
@@ -48,6 +48,16 @@ const recipeValidationRules = [
     .notEmpty()
     .withMessage("Each step must be a non-empty string."),
 
+  body("image")
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Image URL must be at most 500 characters."),
+];
+
+// New recipes must pick from the cuisine list. Updates keep whatever category
+// older recipes already store, so they only require a plain non-empty value.
+const recipeCategoryRules = [
   body("category")
     .trim()
     .notEmpty()
@@ -63,12 +73,29 @@ const recipeValidationRules = [
     .withMessage(
       `Meal category must be one of: ${MEAL_CATEGORIES.join(", ")}.`
     ),
+];
 
-  body("image")
-    .optional()
+const recipeUpdateCategoryRules = [
+  body("category")
     .trim()
-    .isLength({ max: 500 })
-    .withMessage("Image URL must be at most 500 characters."),
+    .notEmpty()
+    .withMessage("Category is required.")
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Category must be between 2 and 50 characters."),
+
+  body("mealCategory")
+    .trim()
+    .notEmpty()
+    .withMessage("Meal category is required.")
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Meal category must be between 2 and 50 characters."),
+];
+
+const recipeValidationRules = [...recipeFieldRules, ...recipeCategoryRules];
+
+const recipeUpdateValidationRules = [
+  ...recipeFieldRules,
+  ...recipeUpdateCategoryRules,
 ];
 
 const recipeIdValidation = [
@@ -102,7 +129,7 @@ router
   .put(
     protect,
     recipeIdValidation,
-    recipeValidationRules,
+    recipeUpdateValidationRules,
     validateRequest,
     updateRecipe
   )

@@ -113,7 +113,7 @@ const buildFilter = (search = "", category = "", mealCategory = "") => {
   return filter;
 };
 
-const validateRecipePayload = (payload) => {
+const validateRecipePayload = (payload, isUpdate = false) => {
   const {
     title,
     category,
@@ -140,7 +140,7 @@ const validateRecipePayload = (payload) => {
     return "Recipe category must be between 2 and 50 characters.";
   }
 
-  if (!CUISINES.includes(category.trim())) {
+  if (!isUpdate && !CUISINES.includes(category.trim())) {
     return `Recipe category must be one of: ${CUISINES.join(", ")}.`;
   }
 
@@ -148,7 +148,7 @@ const validateRecipePayload = (payload) => {
     return "Meal category is required.";
   }
 
-  if (!MEAL_CATEGORIES.includes(mealCategory.trim())) {
+  if (!isUpdate && !MEAL_CATEGORIES.includes(mealCategory.trim())) {
     return `Meal category must be one of: ${MEAL_CATEGORIES.join(", ")}.`;
   }
 

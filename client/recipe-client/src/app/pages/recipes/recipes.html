@@ -258,6 +258,17 @@
             </div>
 
 
+            <div
+              class="recipe-card-image"
+              *ngIf="recipe.image"
+            >
+              <img
+                [src]="recipe.image"
+                alt=""
+              />
+            </div>
+
+
             <div class="recipe-card-body">
 
               <h3>

@@ -5,4 +5,6 @@
 export const environment = {
   production: true,
   apiBaseUrl: 'https://savore-lz8a.onrender.com/api',
+  cloudinaryCloudName: 'd2c4wzep',
+  cloudinaryUploadPreset: 'savore_recipes',
 };

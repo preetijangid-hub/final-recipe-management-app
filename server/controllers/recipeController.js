@@ -343,7 +343,7 @@ const updateRecipe = async (
     } = req.body;
 
     const validationError =
-      validateRecipePayload(req.body);
+      validateRecipePayload(req.body, true);
 
     if (validationError) {
       return res.status(400).json({

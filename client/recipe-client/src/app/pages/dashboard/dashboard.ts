@@ -69,36 +69,6 @@ export class Dashboard implements OnInit {
     this.loadDashboard();
   }
 
-  getRecipeImage(recipe: { image?: string }): string {
-    const image = recipe.image?.trim() ?? '';
-
-    if (!image || !Dashboard.isImageSource(image)) {
-      return Dashboard.fallbackImage;
-    }
-
-    return image;
-  }
-
-  onHeroImageError(event: Event): void {
-    const imageElement = event.target as HTMLImageElement | null;
-
-    if (!imageElement || imageElement.src.endsWith(Dashboard.fallbackImage)) {
-      return;
-    }
-
-    imageElement.src = Dashboard.fallbackImage;
-  }
-
-  private static fallbackImage = '/images/delicious-food.jpg';
-
-  private static isImageSource(value: string): boolean {
-    if (value.startsWith('data:image/')) {
-      return true;
-    }
-
-    return /\.(jpe?g|png|gif|webp|avif|svg|bmp|ico)(\?.*)?(#.*)?$/i.test(value);
-  }
-
   private loadAddedThisWeek(): void {
     const now = new Date();
     const weekStart = new Date(now);
