@@ -47,6 +47,24 @@ The application provides secure authentication, recipe CRUD operations, search a
 * Sorting
 * Recipe detail pages
 
+### Ratings & Reviews
+
+* Rate recipes from 1 to 5 stars
+* Write a review together with a star rating
+* One review per user per recipe, enforced with a unique compound index in the database
+* Average rating and review count aggregated on the backend
+* Reviews shown on the recipe detail page and on recipe cards
+* Review deletion by the review author, the recipe owner, or an admin
+* Regular users cannot delete other people's reviews
+
+### AI Review Features
+
+Both AI features run entirely in the browser, require no API keys, and never send review text to an external service. If the toxicity model is unavailable, the review is held back with a retry message instead of posting unchecked; if the sentiment model is unavailable, the review still posts, just without a tone badge.
+
+* **Sentiment badge** — each review receives a Positive / Neutral / Negative tone badge using Transformers.js (`@huggingface/transformers`) with the `Xenova/distilbert-base-uncased-finetuned-sst-2-english` sentiment model.
+* **Toxic review detection** — reviews are screened with TensorFlow.js (`@tensorflow/tfjs` + `@tensorflow-models/toxicity`) before submission. Clearly toxic reviews (threshold 0.9) are blocked with a friendly message. This is a helpful filter, not a perfect moderation system.
+* Both models are lazy-loaded in the browser only when a review is submitted, with loading indicators shown while they run.
+
 ### Categories
 
 #### Cuisines
@@ -292,6 +310,7 @@ Includes:
 * Recipe ordering
 * Recipe compatibility
 * Recipe statistics
+* Reviews for a recipe (create, list, rating summary, delete)
 
 ### Categories
 

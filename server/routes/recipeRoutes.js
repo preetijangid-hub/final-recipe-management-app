@@ -15,6 +15,14 @@ const {
 } = require("../controllers/recipeController");
 
 const { CUISINES, MEAL_CATEGORIES } = require("../models/Recipe");
+const { SENTIMENTS } = require("../models/Review");
+
+const {
+  createReview,
+  getRecipeReviews,
+  getReviewSummary,
+  deleteReview,
+} = require("../controllers/reviewController");
 
 const protect = require("../middleware/authMiddleware");
 const optionalAuth = require("../middleware/optionalAuth");
@@ -110,6 +118,30 @@ const ratingValidation = [
     .withMessage("Rating must be between 1 and 5."),
 ];
 
+const reviewIdValidation = [
+  param("reviewId")
+    .isMongoId()
+    .withMessage("Invalid review ID."),
+];
+
+const reviewValidationRules = [
+  body("rating")
+    .isInt({ min: 1, max: 5 })
+    .withMessage("Rating must be a whole number between 1 and 5."),
+
+  body("comment")
+    .trim()
+    .notEmpty()
+    .withMessage("Review comment is required.")
+    .isLength({ min: 3, max: 1000 })
+    .withMessage("Review comment must be between 3 and 1000 characters."),
+
+  body("sentiment")
+    .optional()
+    .isIn(SENTIMENTS)
+    .withMessage(`Sentiment must be one of: ${SENTIMENTS.join(", ")}.`),
+];
+
 router
   .route("/")
   .get(optionalAuth, getRecipes)
@@ -163,6 +195,40 @@ router.get(
   recipeIdValidation,
   validateRequest,
   getRecipeCompatibility
+);
+
+router.get(
+  "/:id/reviews",
+  optionalAuth,
+  recipeIdValidation,
+  validateRequest,
+  getRecipeReviews
+);
+
+router.get(
+  "/:id/reviews/summary",
+  optionalAuth,
+  recipeIdValidation,
+  validateRequest,
+  getReviewSummary
+);
+
+router.post(
+  "/:id/reviews",
+  protect,
+  recipeIdValidation,
+  reviewValidationRules,
+  validateRequest,
+  createReview
+);
+
+router.delete(
+  "/:id/reviews/:reviewId",
+  protect,
+  recipeIdValidation,
+  reviewIdValidation,
+  validateRequest,
+  deleteReview
 );
 
 module.exports = router;

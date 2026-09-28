@@ -23,11 +23,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { Recipe } from '../../models/recipe';
 import { AuthService } from '../../services/auth';
 import { RecipeService } from '../../services/recipe';
+import { ReviewSection } from './review-section';
 
 @Component({
   selector: 'app-recipe-details',
   standalone: true,
-  imports: [CommonModule, MatButtonModule],
+  imports: [CommonModule, MatButtonModule, ReviewSection],
   templateUrl: './recipe-details.html',
   styleUrl: './recipe-details.css',
 })
@@ -166,6 +167,16 @@ export class RecipeDetails implements OnInit {
     }
 
     return false;
+  }
+
+  getOwnerId(): string {
+    const owner = this.recipe?.user;
+
+    if (!owner) {
+      return '';
+    }
+
+    return typeof owner === 'string' ? owner : owner._id;
   }
 
   canManageRecipe(): boolean {

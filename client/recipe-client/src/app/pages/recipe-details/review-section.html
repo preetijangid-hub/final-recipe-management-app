@@ -1,0 +1,219 @@
+<section class="reviews-section">
+
+  <div class="section-heading">
+    <span class="section-number">03</span>
+    <div>
+      <span class="eyebrow">WHAT OTHERS THINK</span>
+      <h3>Ratings &amp; Reviews</h3>
+    </div>
+  </div>
+
+
+  <div class="reviews-summary-card">
+
+    <div class="summary-score">
+      <strong>{{ summary.average || '–' }}</strong>
+
+      <span class="summary-stars" aria-hidden="true">
+        @for (star of starValues; track star) {
+          <span
+            class="summary-star"
+            [class.filled]="star <= summary.average"
+          >★</span>
+        }
+      </span>
+    </div>
+
+    <p>
+      {{ summary.count }}
+      {{ summary.count === 1 ? 'review' : 'reviews' }} so far
+    </p>
+
+  </div>
+
+
+  @if (loadingReviews) {
+
+    <div class="reviews-loading">
+      <div class="spinner"></div>
+      <p>Loading reviews...</p>
+    </div>
+
+  } @else if (loadError) {
+
+    <div class="reviews-load-error">
+      <p>{{ loadError }}</p>
+
+      <button
+        type="button"
+        class="secondary-btn"
+        (click)="loadReviews()"
+      >
+        Try again
+      </button>
+    </div>
+
+  } @else {
+
+    @if (!currentUser) {
+
+      <div class="review-form-card signin-card">
+        <p>Sign in to rate this recipe and share your own review.</p>
+      </div>
+
+    } @else if (myReview) {
+
+      <div class="review-form-card">
+        <h4>Thanks for reviewing this recipe!</h4>
+
+        <p class="already-note">
+          Only one review per person is allowed for each recipe.
+          You can delete your review below if you change your mind.
+        </p>
+      </div>
+
+    } @else {
+
+      <div class="review-form-card">
+        <h4>Rate this recipe</h4>
+
+        <div
+          class="star-picker"
+          role="radiogroup"
+          aria-label="Rate this recipe from 1 to 5 stars"
+        >
+          @for (star of starValues; track star) {
+            <button
+              type="button"
+              class="star-btn"
+              [class.active]="star <= (hoverRating || selectedRating)"
+              (mouseenter)="hoverRating = star"
+              (mouseleave)="hoverRating = 0"
+              (click)="selectRating(star)"
+              [attr.aria-label]="'Rate ' + star + ' out of 5 stars'"
+            >
+              ★
+            </button>
+          }
+        </div>
+
+        <label class="review-label" for="review-comment">
+          Your review
+        </label>
+
+        <textarea
+          id="review-comment"
+          name="comment"
+          rows="4"
+          maxlength="1000"
+          placeholder="What did you think about this recipe?"
+          [(ngModel)]="comment"
+        ></textarea>
+
+        @if (sentimentPreview && sentimentPreview !== 'Unknown') {
+          <span
+            class="sentiment-badge"
+            [ngClass]="'sentiment-' + sentimentPreview.toLowerCase()"
+          >
+            {{ sentimentPreview }}
+          </span>
+        }
+
+        @if (aiNotice) {
+          <p class="ai-notice">{{ aiNotice }}</p>
+        }
+
+        @if (submitError) {
+          <p class="review-error">{{ submitError }}</p>
+        }
+
+        <button
+          type="button"
+          class="primary-btn"
+          (click)="submitReview()"
+          [disabled]="submitting"
+        >
+          {{
+            submitting
+              ? (checkingReview ? 'Checking review...' : 'Submitting...')
+              : 'Submit Review'
+          }}
+        </button>
+
+        <p class="ai-hint">
+          Reviews are checked for inappropriate language and receive an
+          automatic tone badge. Both run in your browser and are helpful
+          guides, not perfect moderators.
+        </p>
+      </div>
+
+    }
+
+    @if (deleteError) {
+      <p class="review-error">{{ deleteError }}</p>
+    }
+
+    <div class="review-list">
+
+      @for (review of reviews; track review._id) {
+
+        <article class="review-item">
+
+          <div class="review-head">
+
+            <div class="review-author-block">
+              <span class="review-author">{{ review.user.name }}</span>
+
+              <span class="review-stars" aria-hidden="true">
+                @for (star of starValues; track star) {
+                  <span
+                    class="review-star"
+                    [class.filled]="star <= review.rating"
+                  >★</span>
+                }
+              </span>
+            </div>
+
+            @if (review.sentiment && review.sentiment !== 'Unknown') {
+              <span
+                class="sentiment-badge"
+                [ngClass]="'sentiment-' + review.sentiment.toLowerCase()"
+              >
+                {{ review.sentiment }}
+              </span>
+            }
+
+          </div>
+
+          <p class="review-comment">{{ review.comment }}</p>
+
+          <div class="review-foot">
+            <span class="review-date">
+              {{ formatDate(review.createdAt) }}
+            </span>
+
+            @if (canDeleteReview(review)) {
+              <button
+                type="button"
+                class="delete-review-btn"
+                (click)="deleteReview(review)"
+                [disabled]="deletingReviewId === review._id"
+              >
+                {{ deletingReviewId === review._id ? 'Deleting...' : 'Delete' }}
+              </button>
+            }
+          </div>
+
+        </article>
+
+      } @empty {
+
+        <p class="no-reviews">
+          No reviews yet. Be the first to share your thoughts!
+        </p>
+
+      }
+
+    </div>
+  }
+</section>

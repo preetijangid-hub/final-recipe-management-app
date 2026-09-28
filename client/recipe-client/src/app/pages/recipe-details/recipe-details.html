@@ -240,6 +240,12 @@
       </section>
 
 
+      <app-review-section
+        [recipeId]="recipe._id"
+        [recipeOwnerId]="getOwnerId()"
+      />
+
+
       <section class="bottom-action">
 
         <button
