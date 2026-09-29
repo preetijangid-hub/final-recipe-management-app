@@ -10,6 +10,9 @@ import { FoodPreferences } from './pages/food-preferences/food-preferences';
 import { AssistantPage } from './pages/assistant/assistant';
 import { CategoriesPage } from './pages/categories/categories';
 import { MyRecipesPage } from './pages/my-recipes/my-recipes';
+import { MyCollectionsPage } from './pages/my-collections/my-collections';
+import { FavouritesPage } from './pages/favourites/favourites';
+import { SharedCollectionPage } from './pages/shared-collection/shared-collection';
 import { AddRecipePage } from './pages/add-recipe/add-recipe';
 
 import { authGuard, publicGuard } from './guards/auth-guard';
@@ -60,6 +63,18 @@ export const routes: Routes = [
   },
 
   {
+    path: 'my-collections',
+    component: MyCollectionsPage,
+    canActivate: [authGuard],
+  },
+
+  {
+    path: 'favourites',
+    component: FavouritesPage,
+    canActivate: [authGuard],
+  },
+
+  {
     path: 'add-recipe',
     component: AddRecipePage,
     canActivate: [authGuard],
@@ -87,6 +102,13 @@ export const routes: Routes = [
     path: 'recipes/:id',
     component: RecipeDetails,
     canActivate: [authGuard],
+  },
+
+  {
+    // Public page, opened from a share link. It has no auth guard on
+    // purpose, and the API only returns collections that were shared.
+    path: 'shared/:token',
+    component: SharedCollectionPage,
   },
 
   { path: '**', component: NotFound },

@@ -354,6 +354,42 @@
   font-weight: 700;
 }
 
+/* FAVOURITE CONTROL */
+.fav-toggle {
+  padding: 10px 18px;
+  border: 1px solid #e3d3c2;
+  border-radius: 999px;
+  background: #fdf8f1;
+  color: #92664a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fav-toggle.fav-active {
+  border-color: #d99b8d;
+  background: #fdeeea;
+  color: #b3552e;
+}
+
+.fav-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fav-feedback {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #a4472c;
+}
+
+@media (max-width: 640px) {
+  .details-actions {
+    width: 100%;
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

@@ -9,6 +9,9 @@ const authRoutes = require("./routes/authRoutes");
 const recipeRoutes = require("./routes/recipeRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const preferenceRoutes = require("./routes/preferenceRoutes");
+const favouriteRoutes = require("./routes/favouriteRoutes");
+const collectionRoutes = require("./routes/collectionRoutes");
+const publicCollectionRoutes = require("./routes/publicCollectionRoutes");
 const assistantRoutes = require("./routes/assistantRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
@@ -34,7 +37,7 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -57,6 +60,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/recipes", recipeRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/preferences", preferenceRoutes);
+app.use("/api/favourites", favouriteRoutes);
+app.use("/api/collections", collectionRoutes);
+app.use("/api/public", publicCollectionRoutes);
 app.use("/api/assistant", assistantRoutes);
 app.use("/api/admin", adminRoutes);
 

@@ -603,6 +603,148 @@
   cursor: not-allowed;
 }
 
+.card-extra-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.fav-btn,
+.collect-btn {
+  border-radius: 7px;
+  padding: 7px 9px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fav-btn {
+  border: 1px solid #e3d3c2;
+  background: #fdf8f1;
+  color: #92664a;
+}
+
+.fav-btn.fav-active {
+  border-color: #d99b8d;
+  background: #fdeeea;
+  color: #b3552e;
+}
+
+.fav-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.collect-btn {
+  border: 1px solid #d7c8b9;
+  background: #f8f1e9;
+  color: #755536;
+}
+
+.collect-btn:hover {
+  background: #f2e7d9;
+}
+
+
+/* =========================================================
+   COLLECT MODAL
+   ========================================================= */
+
+.collect-modal {
+  width: min(430px, 100%);
+}
+
+.collect-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 30px 8px;
+}
+
+.collect-loading,
+.collect-empty {
+  margin: 0;
+  color: #897e74;
+  font-size: 13px;
+}
+
+.collect-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid #e7dcca;
+  border-radius: 12px;
+  background: #fffdfa;
+  cursor: pointer;
+  font-size: 14px;
+  color: #41372f;
+  text-align: left;
+}
+
+.collect-option:hover:not(:disabled) {
+  background: #f8f1e9;
+}
+
+.collect-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.collect-state {
+  font-size: 12px;
+  font-weight: 700;
+  color: #a36d25;
+}
+
+.collect-create {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 18px 30px 26px;
+  border-top: 1px solid #ece3da;
+}
+
+.collect-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #755536;
+}
+
+.collect-create input {
+  padding: 11px 14px;
+  border: 1px solid #d7c8b9;
+  border-radius: 12px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.collect-create input:focus {
+  outline: none;
+  border-color: #a36d25;
+}
+
+.modal-close {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #897e74;
+}
+
+@media (max-width: 640px) {
+  .card-extra-actions {
+    width: 100%;
+  }
+
+  .fav-btn,
+  .collect-btn {
+    flex: 1;
+  }
+}
+
 
 /* =========================================================
    PAGINATION

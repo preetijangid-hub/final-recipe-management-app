@@ -13,8 +13,11 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, TimeoutError, catchError, debounceTime, distinctUntilChanged, finalize, of, switchMap, timeout } from 'rxjs';
 
 import { Recipe, RecipeListResponse, CUISINES, MEAL_CATEGORIES } from '../../models/recipe';
+import { CollectionSummary } from '../../models/collection';
 import { AuthService } from '../../services/auth';
 import { RecipeService } from '../../services/recipe';
+import { FavouritesService } from '../../services/favourites';
+import { CollectionService } from '../../services/collection';
 
 type RecipePayload = {
   title: string;
@@ -34,6 +37,11 @@ type RecipePayload = {
 export class Recipes {
   private readonly recipeService = inject(RecipeService);
   private readonly authService = inject(AuthService);
+  private readonly favouritesService = inject(FavouritesService);
+
+  // Exposed for the favourite controls in the template.
+  readonly favourites = this.favouritesService;
+  private readonly collectionService = inject(CollectionService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -66,6 +74,25 @@ export class Recipes {
   readonly deletingId = signal<string | null>(null);
   editingRecipeId = '';
 
+  // Favourite and collection controls shared across cards.
+  readonly showCollectModal = signal(false);
+
+  readonly collectRecipe = signal<Recipe | null>(null);
+
+  readonly collectableCollections = signal<CollectionSummary[]>([]);
+
+  readonly loadingCollections = signal(false);
+
+  readonly addingToCollectionId = signal('');
+
+  // Collections that already received the recipe in the open modal.
+  readonly addedCollectionIds = signal<string[]>([]);
+
+  readonly creatingForCollect = signal(false);
+
+  newCollectionName = '';
+
+
   private readonly searchInput$ = new Subject<string>();
 
   readonly ingredients = this.fb.nonNullable.array([this.createRow()]);
@@ -89,6 +116,8 @@ export class Recipes {
   });
 
   constructor() {
+    this.favouritesService.loadFavourites();
+
     this.route.queryParams.subscribe((params) => {
       const incomingCategory = (params['category'] ?? '').toString();
       if (incomingCategory) {
@@ -229,6 +258,139 @@ export class Recipes {
 
   getIngredients(recipe: Recipe): string {
     return recipe.ingredients.join(', ') || 'No ingredients listed';
+  }
+
+  toggleFavourite(recipeId: string): void {
+    this.favouritesService.toggleFavourite(recipeId);
+  }
+
+  openCollectModal(recipe: Recipe): void {
+    this.collectRecipe.set(recipe);
+    this.addedCollectionIds.set([]);
+    this.newCollectionName = '';
+    this.showCollectModal.set(true);
+    this.saveError.set('');
+    this.saveSuccess.set('');
+    this.favouritesService.clearMessages();
+
+    this.loadCollectableCollections();
+  }
+
+  closeCollectModal(): void {
+    this.showCollectModal.set(false);
+    this.collectRecipe.set(null);
+  }
+
+  addToCollection(collectionId: string): void {
+    const recipe = this.collectRecipe();
+
+    if (!recipe || this.addingToCollectionId()) {
+      return;
+    }
+
+    // Skip collections that already received this recipe.
+    if (this.addedCollectionIds().includes(collectionId)) {
+      return;
+    }
+
+    this.addingToCollectionId.set(collectionId);
+    this.saveError.set('');
+
+    this.collectionService
+      .addRecipe(collectionId, recipe._id)
+      .subscribe({
+        next: (response) => {
+          this.addingToCollectionId.set('');
+          this.addedCollectionIds.update((ids) => [
+            ...ids,
+            collectionId,
+          ]);
+          this.saveSuccess.set(
+            response?.message || 'Recipe added to the collection.'
+          );
+        },
+        error: (error) => {
+          this.addingToCollectionId.set('');
+
+          // A duplicate is not a failure worth alerting about; the
+          // collection already contains the recipe.
+          if (error?.status === 409) {
+            this.addedCollectionIds.update((ids) => [
+              ...ids,
+              collectionId,
+            ]);
+          } else {
+            this.saveError.set(
+              error?.error?.message ||
+                'Unable to add the recipe to the collection.'
+            );
+          }
+        },
+      });
+  }
+
+  createCollectionForRecipe(): void {
+    const recipe = this.collectRecipe();
+    const name = this.newCollectionName.trim();
+
+    if (!recipe || this.creatingForCollect()) {
+      return;
+    }
+
+    if (name.length < 2 || name.length > 60) {
+      this.saveError.set(
+        'Collection name must be between 2 and 60 characters.'
+      );
+      return;
+    }
+
+    this.creatingForCollect.set(true);
+    this.saveError.set('');
+
+    this.collectionService
+      .createCollection(name)
+      .subscribe({
+        next: (response) => {
+          this.creatingForCollect.set(false);
+          this.newCollectionName = '';
+
+          const created = response?.collection;
+
+          if (created) {
+            this.collectableCollections.update((collections) => [
+              created,
+              ...collections,
+            ]);
+
+            this.addToCollection(created._id);
+          }
+        },
+        error: (error) => {
+          this.creatingForCollect.set(false);
+          this.saveError.set(
+            error?.error?.message ||
+              'Unable to create the collection.'
+          );
+        },
+      });
+  }
+
+  private loadCollectableCollections(): void {
+    this.loadingCollections.set(true);
+
+    this.collectionService
+      .getMyCollections(1, 50)
+      .pipe(finalize(() => this.loadingCollections.set(false)))
+      .subscribe({
+        next: (response) => {
+          this.collectableCollections.set(
+            response?.collections ?? []
+          );
+        },
+        error: () => {
+          this.collectableCollections.set([]);
+        },
+      });
   }
 
   isOwner(recipe: Recipe): boolean {

@@ -7,6 +7,15 @@ import { finalize } from 'rxjs';
 import { CUISINES, MEAL_CATEGORIES, Recipe } from '../../models/recipe';
 import { RecipeService } from '../../services/recipe';
 import { CloudinaryService } from '../../services/cloudinary';
+import {
+  FoodImageService,
+  FoodImageStatus,
+} from '../../services/food-image';
+import {
+  exceedsImageSizeLimit,
+  isSupportedImage,
+  MAX_IMAGE_SIZE_BYTES,
+} from '../../utils/image-file';
 
 @Component({
   selector: 'app-add-recipe',
@@ -23,6 +32,9 @@ export class AddRecipePage {
   private readonly route = inject(ActivatedRoute);
   private readonly changeDetector = inject(ChangeDetectorRef);
 
+  // Exposed so the template can show the model/check progress.
+  readonly foodImages = inject(FoodImageService);
+
   saving = false;
   loadingRecipe = false;
   errorMessage = '';
@@ -31,7 +43,16 @@ export class AddRecipePage {
   uploadingImage = false;
   imagePreview = '';
   selectedImageFile: File | null = null;
-  readonly maxImageSizeBytes = 5 * 1024 * 1024;
+  readonly maxImageSizeBytes = MAX_IMAGE_SIZE_BYTES;
+
+  // Result of the local AI check for the selected picture.
+  checkingImage = false;
+  imageNotice = '';
+  imageNoticeIsWarning = false;
+
+  // Every selection gets a number, so a slow check for a picture that was
+  // already replaced can be ignored when it finishes.
+  private imageCheckId = 0;
 
   isEditMode = false;
   editRecipeId = '';
@@ -125,13 +146,13 @@ export class AddRecipePage {
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
+    if (!isSupportedImage(file)) {
       this.errorMessage = 'Please choose a valid image file.';
       input.value = '';
       return;
     }
 
-    if (file.size > this.maxImageSizeBytes) {
+    if (exceedsImageSizeLimit(file, this.maxImageSizeBytes)) {
       this.errorMessage = 'Image must be 5 MB or smaller.';
       input.value = '';
       return;
@@ -146,6 +167,54 @@ export class AddRecipePage {
     this.selectedImageFile = file;
     this.imagePreview = URL.createObjectURL(file);
     input.value = '';
+
+    void this.checkSelectedImage(file);
+  }
+
+  // The picture the user picked is never rejected or removed here - the
+  // check only adds a hint under it.
+  private async checkSelectedImage(file: File): Promise<void> {
+    const checkId = ++this.imageCheckId;
+
+    this.checkingImage = true;
+    this.imageNotice = '';
+    this.changeDetector.detectChanges();
+
+    const status = await this.foodImages.checkImage(file);
+
+    // The picture was replaced or removed while the check was running.
+    if (checkId !== this.imageCheckId) {
+      return;
+    }
+
+    this.checkingImage = false;
+    this.imageNotice = this.buildImageNotice(status);
+    this.imageNoticeIsWarning = status === 'not-food';
+
+    this.changeDetector.detectChanges();
+  }
+
+  private buildImageNotice(status: FoodImageStatus): string {
+    if (status === 'not-food') {
+      return (
+        'This picture does not look like food. Choose a different ' +
+        'image, or keep this one if it is correct.'
+      );
+    }
+
+    if (status === 'uncertain') {
+      return (
+        'We could not check this picture, so no guess was made. ' +
+        'You can continue normally.'
+      );
+    }
+
+    return '';
+  }
+
+  dismissImageNotice(): void {
+    this.imageNotice = '';
+    this.imageNoticeIsWarning = false;
   }
 
   removeSelectedImage(): void {
@@ -155,6 +224,11 @@ export class AddRecipePage {
 
     this.selectedImageFile = null;
     this.imagePreview = '';
+
+    // Cancel any hint that is still on its way for the removed picture.
+    this.imageCheckId += 1;
+    this.checkingImage = false;
+    this.dismissImageNotice();
   }
 
   private async uploadSelectedImage(): Promise<string> {

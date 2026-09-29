@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 
 import { AuthService } from './services/auth';
+import { FavouritesService } from './services/favourites';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +16,7 @@ import { AuthService } from './services/auth';
 export class App implements OnDestroy {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly favouritesService = inject(FavouritesService);
 
   private readonly routerEventsSubscription = this.router.events.subscribe(
     () => {
@@ -42,6 +44,10 @@ export class App implements OnDestroy {
 
   logout(): void {
     this.authService.logout();
+
+    // Drop the cached favourites so the next user starts fresh.
+    this.favouritesService.reset();
+
     this.router.navigate(['/login']);
   }
 }

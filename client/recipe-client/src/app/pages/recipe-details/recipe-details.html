@@ -115,15 +115,38 @@
               {{ recipe.title }}
             </h2>
 
-            <div class="details-actions" *ngIf="canManageRecipe()">
-              <button type="button" mat-stroked-button color="primary" (click)="editRecipe()">
-                Edit
+            <div class="details-actions">
+              <button
+                type="button"
+                class="fav-toggle"
+                [class.fav-active]="favourites.isFavourite(recipe._id)"
+                [disabled]="favourites.isToggling(recipe._id)"
+                (click)="toggleFavourite()"
+              >
+                {{
+                  favourites.isFavourite(recipe._id)
+                    ? '♥ Favourited'
+                    : '♡ Add to Favourites'
+                }}
               </button>
-              <button type="button" mat-flat-button color="warn" (click)="deleteRecipe()">
-                Delete
-              </button>
+
+              <span *ngIf="canManageRecipe()">
+                <button type="button" mat-stroked-button color="primary" (click)="editRecipe()">
+                  Edit
+                </button>
+                <button type="button" mat-flat-button color="warn" (click)="deleteRecipe()">
+                  Delete
+                </button>
+              </span>
             </div>
           </div>
+
+          <p
+            class="fav-feedback"
+            *ngIf="favourites.lastError()"
+          >
+            {{ favourites.lastError() }}
+          </p>
 
           <p class="intro-text">
             A carefully curated recipe from your Savoré collection.

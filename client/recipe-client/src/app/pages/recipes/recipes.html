@@ -74,6 +74,38 @@
   </div>
 
 
+  <!-- FAVOURITE MESSAGES -->
+  <div
+    class="alert success-alert"
+    *ngIf="favourites.lastSuccess()"
+  >
+    <span>✓</span>
+    {{ favourites.lastSuccess() }}
+
+    <button
+      type="button"
+      (click)="favourites.clearMessages()"
+    >
+      ×
+    </button>
+  </div>
+
+  <div
+    class="alert error-alert"
+    *ngIf="favourites.lastError()"
+  >
+    <span>!</span>
+    {{ favourites.lastError() }}
+
+    <button
+      type="button"
+      (click)="favourites.clearMessages()"
+    >
+      ×
+    </button>
+  </div>
+
+
   <!-- FILTERS -->
   <section class="filter-section">
 
@@ -316,6 +348,33 @@
                 View Recipe
                 <span>→</span>
               </a>
+
+
+              <div class="card-extra-actions">
+
+                <button
+                  type="button"
+                  class="fav-btn"
+                  [class.fav-active]="favourites.isFavourite(recipe._id)"
+                  [disabled]="favourites.isToggling(recipe._id)"
+                  (click)="toggleFavourite(recipe._id)"
+                >
+                  {{
+                    favourites.isFavourite(recipe._id)
+                      ? '♥ Favourited'
+                      : '♡ Favourite'
+                  }}
+                </button>
+
+                <button
+                  type="button"
+                  class="collect-btn"
+                  (click)="openCollectModal(recipe)"
+                >
+                  ＋ Collect
+                </button>
+
+              </div>
 
 
               <div
@@ -803,6 +862,7 @@
             Cuisine
           </label>
 
+
           <select
             id="edit-category"
             formControlName="category"
@@ -1040,5 +1100,131 @@
     </div>
 
   </div>
+
+
+  <!-- =====================================================
+       ADD TO COLLECTION MODAL
+       ===================================================== -->
+
+  <div
+    class="modal-backdrop"
+    *ngIf="showCollectModal()"
+  >
+
+    <div
+      class="modal collect-modal"
+      role="dialog"
+      aria-modal="true"
+    >
+
+      <div class="modal-header">
+
+        <div>
+          <span class="modal-eyebrow">
+            SAVE TO COLLECTION
+          </span>
+
+          <h2>
+            Collect “{{ collectRecipe()?.title }}”
+          </h2>
+
+          <p>
+            Pick a collection or create a new one.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close"
+          (click)="closeCollectModal()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="collect-list">
+
+        <p
+          class="collect-loading"
+          *ngIf="loadingCollections()"
+        >
+          Loading your collections...
+        </p>
+
+        <p
+          class="collect-empty"
+          *ngIf="
+            !loadingCollections() &&
+            collectableCollections().length === 0
+          "
+        >
+          You have no collections yet. Create one below.
+        </p>
+
+        <button
+          type="button"
+          class="collect-option"
+          *ngFor="
+            let collection of collectableCollections()
+          "
+          [disabled]="
+            addingToCollectionId() === collection._id ||
+            addedCollectionIds().includes(collection._id)
+          "
+          (click)="addToCollection(collection._id)"
+        >
+          <span class="collect-name">
+            {{ collection.name }}
+          </span>
+
+          <span class="collect-state">
+            {{
+              addedCollectionIds().includes(collection._id)
+                ? 'Added ✓'
+                : addingToCollectionId() === collection._id
+                  ? 'Adding...'
+                  : 'Add'
+            }}
+          </span>
+        </button>
+
+      </div>
+
+
+      <div class="collect-create">
+
+        <label class="collect-label">
+          Or start a new collection
+        </label>
+
+        <input
+          type="text"
+          [(ngModel)]="newCollectionName"
+          name="newCollectionName"
+          placeholder="Collection name"
+          maxlength="60"
+        />
+
+        <button
+          type="button"
+          class="primary-btn"
+          [disabled]="creatingForCollect()"
+          (click)="createCollectionForRecipe()"
+        >
+          {{
+            creatingForCollect()
+              ? 'Creating...'
+              : 'Create & Add'
+          }}
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
 
 </div>

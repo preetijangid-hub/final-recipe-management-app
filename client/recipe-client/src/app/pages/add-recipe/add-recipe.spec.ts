@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
+import { signal } from '@angular/core';
 import { Subject, of } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -7,6 +8,10 @@ import { AddRecipePage } from './add-recipe';
 import { Recipe } from '../../models/recipe';
 import { RecipeService } from '../../services/recipe';
 import { CloudinaryService } from '../../services/cloudinary';
+import {
+  FoodImageService,
+  FoodImageStatus,
+} from '../../services/food-image';
 
 describe('AddRecipePage', () => {
   const queryParams = new Subject<Record<string, string | undefined>>();
@@ -19,6 +24,14 @@ describe('AddRecipePage', () => {
 
   const cloudinaryServiceMock = {
     uploadImage: vi.fn(),
+  };
+
+  const foodImageServiceMock = {
+    modelLoading: signal(false),
+    checking: signal(false),
+    checkImage: vi.fn(
+      (_file: File): Promise<FoodImageStatus> => Promise.resolve('food')
+    ),
   };
 
   const routerMock = {
@@ -63,8 +76,23 @@ describe('AddRecipePage', () => {
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
   };
 
+  // Lets a test hold an image check open and finish it later.
+  const createDeferred = <T,>() => {
+    let resolve!: (value: T) => void;
+
+    const promise = new Promise<T>((innerResolve) => {
+      resolve = innerResolve;
+    });
+
+    return { promise, resolve };
+  };
+
   beforeEach(async () => {
     vi.clearAllMocks();
+
+    foodImageServiceMock.checkImage.mockImplementation(
+      (_file: File): Promise<FoodImageStatus> => Promise.resolve('food')
+    );
 
     URL.createObjectURL = vi.fn(
       () => 'blob:preview'
@@ -78,6 +106,7 @@ describe('AddRecipePage', () => {
         { provide: Router, useValue: routerMock },
         { provide: RecipeService, useValue: recipeServiceMock },
         { provide: CloudinaryService, useValue: cloudinaryServiceMock },
+        { provide: FoodImageService, useValue: foodImageServiceMock },
       ],
     }).compileComponents();
 
@@ -287,5 +316,165 @@ describe('AddRecipePage', () => {
       })
     );
     expect(routerMock.navigate).toHaveBeenCalledWith(['/recipes', 'recipe-2']);
+  });
+
+  it('warns when the AI check says the picture is not food', async () => {
+    const component = fixture.componentInstance;
+
+    foodImageServiceMock.checkImage.mockResolvedValue('not-food');
+
+    selectImage(component, sampleFile);
+    await flushAsyncWork();
+
+    expect(component.imageNoticeIsWarning).toBe(true);
+    expect(component.imageNotice).toContain('does not look like food');
+    expect(component.checkingImage).toBe(false);
+
+    // The picture is kept, only a hint is added.
+    expect(component.selectedImageFile).toBe(sampleFile);
+    expect(component.imagePreview).toBe('blob:preview');
+  });
+
+  it('shows a neutral message when the check cannot decide', async () => {
+    const component = fixture.componentInstance;
+
+    foodImageServiceMock.checkImage.mockResolvedValue('uncertain');
+
+    selectImage(component, sampleFile);
+    await flushAsyncWork();
+
+    expect(component.imageNoticeIsWarning).toBe(false);
+    expect(component.imageNotice).toContain('could not check this picture');
+    expect(component.selectedImageFile).toBe(sampleFile);
+  });
+
+  it('stays quiet for a picture that is recognised as food', async () => {
+    const component = fixture.componentInstance;
+
+    selectImage(component, sampleFile);
+    await flushAsyncWork();
+
+    expect(component.imageNotice).toBe('');
+    expect(component.imageNoticeIsWarning).toBe(false);
+  });
+
+  it('still saves the recipe after a non-food warning', async () => {
+    const component = fixture.componentInstance;
+
+    foodImageServiceMock.checkImage.mockResolvedValue('not-food');
+    cloudinaryServiceMock.uploadImage.mockResolvedValue(
+      'https://res.cloudinary.com/demo/uploaded.jpg'
+    );
+    recipeServiceMock.createRecipe.mockReturnValue(
+      of({ recipe: { ...existingRecipe, _id: 'recipe-3' } })
+    );
+
+    component.recipeForm.patchValue({
+      title: 'Still saved',
+      category: 'Italian',
+      mealCategory: 'Dinner',
+      ingredients: ['Salt'],
+      steps: ['Mix'],
+    });
+
+    selectImage(component, sampleFile);
+    await flushAsyncWork();
+
+    expect(component.imageNotice).toContain('does not look like food');
+
+    component.submit();
+    await flushAsyncWork();
+
+    expect(recipeServiceMock.createRecipe).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Still saved',
+        image: 'https://res.cloudinary.com/demo/uploaded.jpg',
+      })
+    );
+  });
+
+  it('still saves the recipe when the image check fails', async () => {
+    const component = fixture.componentInstance;
+
+    // A failed check is reported as uncertain, never as a warning.
+    foodImageServiceMock.checkImage.mockResolvedValue('uncertain');
+    cloudinaryServiceMock.uploadImage.mockResolvedValue(
+      'https://res.cloudinary.com/demo/fallback.jpg'
+    );
+    recipeServiceMock.createRecipe.mockReturnValue(
+      of({ recipe: { ...existingRecipe, _id: 'recipe-4' } })
+    );
+
+    component.recipeForm.patchValue({
+      title: 'No model needed',
+      category: 'Italian',
+      mealCategory: 'Dinner',
+      ingredients: ['Salt'],
+      steps: ['Mix'],
+    });
+
+    selectImage(component, sampleFile);
+    await flushAsyncWork();
+
+    component.submit();
+    await flushAsyncWork();
+
+    expect(recipeServiceMock.createRecipe).toHaveBeenCalledWith(
+      expect.objectContaining({
+        image: 'https://res.cloudinary.com/demo/fallback.jpg',
+      })
+    );
+  });
+
+  it('ignores a check result for a picture that was already replaced', async () => {
+    const component = fixture.componentInstance;
+    const pendingCheck = createDeferred<FoodImageStatus>();
+
+    foodImageServiceMock.checkImage.mockReturnValue(pendingCheck.promise);
+
+    selectImage(component, sampleFile);
+    component.removeSelectedImage();
+
+    pendingCheck.resolve('not-food');
+    await flushAsyncWork();
+
+    expect(component.imageNotice).toBe('');
+    expect(component.selectedImageFile).toBeNull();
+  });
+
+  it('clears the warning when the picture is replaced by a food picture', async () => {
+    const component = fixture.componentInstance;
+
+    foodImageServiceMock.checkImage.mockResolvedValueOnce('not-food');
+
+    selectImage(component, sampleFile);
+    await flushAsyncWork();
+
+    expect(component.imageNoticeIsWarning).toBe(true);
+
+    foodImageServiceMock.checkImage.mockResolvedValue('food');
+    selectImage(component, sampleFile);
+    await flushAsyncWork();
+
+    expect(component.imageNotice).toBe('');
+    expect(component.imageNoticeIsWarning).toBe(false);
+    expect(component.selectedImageFile).toBe(sampleFile);
+  });
+
+  it('clears the warning when the picture is removed', async () => {
+    const component = fixture.componentInstance;
+
+    foodImageServiceMock.checkImage.mockResolvedValue('not-food');
+
+    selectImage(component, sampleFile);
+    await flushAsyncWork();
+
+    expect(component.imageNoticeIsWarning).toBe(true);
+
+    component.removeSelectedImage();
+
+    expect(component.imageNotice).toBe('');
+    expect(component.imageNoticeIsWarning).toBe(false);
+    expect(component.selectedImageFile).toBeNull();
   });
 });

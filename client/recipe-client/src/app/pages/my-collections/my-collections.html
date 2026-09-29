@@ -1,0 +1,545 @@
+<div class="collections-page">
+
+  <section class="page-heading">
+
+    <div>
+      <span class="eyebrow">
+        YOUR KITCHEN SHELVES
+      </span>
+
+      <h2>My Collections</h2>
+
+      <p>
+        Group recipes into shelves you can return to anytime.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="primary-btn"
+      (click)="openCreateModal()"
+    >
+      <span>＋</span>
+      New Collection
+    </button>
+
+  </section>
+
+
+  <!-- SUCCESS -->
+  <div
+    class="alert success-alert"
+    *ngIf="successMessage()"
+  >
+    <span>✓</span>
+    {{ successMessage() }}
+
+    <button
+      type="button"
+      (click)="successMessage.set('')"
+    >
+      ×
+    </button>
+  </div>
+
+
+  <!-- ERROR -->
+  <div
+    class="alert error-alert"
+    *ngIf="errorMessage()"
+  >
+    <span>!</span>
+    {{ errorMessage() }}
+
+    <button
+      type="button"
+      (click)="errorMessage.set('')"
+    >
+      ×
+    </button>
+  </div>
+
+
+  <main class="content-section">
+
+    <!-- LOADING -->
+    <div
+      class="state-card"
+      *ngIf="loading()"
+    >
+      <div class="spinner"></div>
+
+      <p>Gathering your collections...</p>
+    </div>
+
+
+    <!-- EMPTY STATE -->
+    <div
+      class="state-card empty-state"
+      *ngIf="!loading() && !errorMessage() && collections().length === 0"
+    >
+      <span class="empty-icon">✦</span>
+
+      <h3>No collections yet</h3>
+
+      <p>
+        Create your first collection to keep your
+        favourite recipes neatly together.
+      </p>
+
+      <button
+        type="button"
+        class="primary-btn"
+        (click)="openCreateModal()"
+      >
+        Create your first collection
+      </button>
+
+      <a
+        class="text-link"
+        routerLink="/recipes"
+      >
+        Browse recipes instead
+      </a>
+    </div>
+
+
+    <!-- GRID -->
+    <div
+      class="collections-grid"
+      *ngIf="!loading() && collections().length > 0"
+    >
+
+      <article
+        class="collection-card"
+        *ngFor="let collection of collections()"
+      >
+
+        <div class="collection-cover">
+          <img
+            *ngIf="collection.coverImage"
+            [src]="collection.coverImage"
+            alt=""
+          />
+
+          <span
+            class="cover-fallback"
+            *ngIf="!collection.coverImage"
+          >
+            ✦
+          </span>
+
+          <!-- COVER CONTROLS -->
+          <div class="cover-controls">
+            <label class="cover-action">
+              {{
+                updatingCoverId() === collection._id
+                  ? 'Saving cover...'
+                  : 'Change cover'
+              }}
+              <input
+                class="file-input"
+                type="file"
+                accept="image/*"
+                [disabled]="updatingCoverId() === collection._id"
+                (change)="onCardCoverSelected($event, collection)"
+              />
+            </label>
+
+            <button
+              type="button"
+              class="cover-action"
+              *ngIf="collection.coverImage"
+              [disabled]="updatingCoverId() === collection._id"
+              (click)="removeCover(collection)"
+            >
+              Remove cover
+            </button>
+          </div>
+        </div>
+
+        <div class="collection-body">
+          <h3>
+            {{ collection.name }}
+          </h3>
+
+          <span class="recipe-count">
+            {{ collection.recipeCount }}
+            {{ collection.recipeCount === 1 ? 'recipe' : 'recipes' }}
+          </span>
+        </div>
+
+        <div class="collection-actions">
+          <button
+            type="button"
+            class="view-recipes-btn"
+            (click)="toggleRecipes(collection)"
+          >
+            {{
+              isRecipeListOpen(collection._id)
+                ? 'Hide recipes'
+                : 'View recipes'
+            }}
+          </button>
+
+          <button
+            type="button"
+            class="view-recipes-btn"
+            (click)="openShareModal(collection)"
+          >
+            {{ collection.shareToken ? 'Shared' : 'Share' }}
+          </button>
+        </div>
+
+        <!-- RECIPES INSIDE THE COLLECTION -->
+        <div
+          class="collection-recipes"
+          *ngIf="isRecipeListOpen(collection._id)"
+        >
+          <p
+            class="recipes-loading"
+            *ngIf="loadingRecipes()"
+          >
+            Loading recipes...
+          </p>
+
+          <p
+            class="recipes-empty"
+            *ngIf="
+              !loadingRecipes() &&
+              selectedCollection()?.recipes?.length === 0
+            "
+          >
+            No recipes in this collection yet.
+          </p>
+
+          <ul *ngIf="!loadingRecipes()">
+            <li
+              *ngFor="
+                let recipe of selectedCollection()?.recipes
+              "
+            >
+              <a
+                [routerLink]="[
+                  '/recipes',
+                  recipe._id
+                ]"
+              >
+                {{ recipe.title }}
+              </a>
+
+              <button
+                type="button"
+                class="remove-recipe-btn"
+                [disabled]="removingRecipeId() === recipe._id"
+                (click)="removeSelectedRecipe(recipe._id)"
+              >
+                {{
+                  removingRecipeId() === recipe._id
+                    ? 'Removing...'
+                    : 'Remove'
+                }}
+              </button>
+            </li>
+          </ul>
+        </div>
+
+      </article>
+
+    </div>
+
+
+    <!-- PAGINATION -->
+    <div
+      class="pagination"
+      *ngIf="!loading() && totalPages() > 1"
+    >
+      <button
+        type="button"
+        [disabled]="currentPage() === 1"
+        (click)="previousPage()"
+      >
+        ← Previous
+      </button>
+
+      <span>
+        Page
+        <strong>
+          {{ currentPage() }}
+        </strong>
+        of
+        <strong>
+          {{ totalPages() }}
+        </strong>
+        ·
+        {{ totalItems() }}
+        collections
+      </span>
+
+      <button
+        type="button"
+        [disabled]="currentPage() >= totalPages()"
+        (click)="nextPage()"
+      >
+        Next →
+      </button>
+    </div>
+
+  </main>
+
+
+  <!-- CREATE COLLECTION MODAL -->
+  <div
+    class="modal-backdrop"
+    *ngIf="showCreateModal()"
+  >
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal-header">
+        <div>
+          <span class="modal-eyebrow">
+            NEW COLLECTION
+          </span>
+
+          <h2>
+            Create a collection
+          </h2>
+
+          <p>
+            Give your collection a short, memorable name.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close"
+          (click)="closeCreateModal()"
+        >
+          ×
+        </button>
+      </div>
+
+      <form
+        [formGroup]="createForm"
+        (ngSubmit)="createCollection()"
+      >
+        <label class="field-label">
+          Collection name
+        </label>
+
+        <input
+          type="text"
+          formControlName="name"
+          placeholder="e.g. Weekend baking"
+          maxlength="60"
+        />
+
+        <p
+          class="field-error"
+          *ngIf="
+            createForm.controls.name.invalid &&
+            createForm.controls.name.touched
+          "
+        >
+          Name must be between 2 and 60 characters.
+        </p>
+
+        <label class="field-label">
+          Description (optional)
+        </label>
+
+        <textarea
+          formControlName="description"
+          rows="2"
+          maxlength="200"
+          placeholder="What is this collection about?"
+        ></textarea>
+
+        <label class="field-label">
+          Cover image (optional)
+        </label>
+
+        <div class="cover-picker">
+          <label class="secondary-btn cover-picker-btn">
+            Choose an image
+            <input
+              class="file-input"
+              type="file"
+              accept="image/*"
+              (change)="onCoverSelected($event)"
+            />
+          </label>
+
+          <button
+            type="button"
+            class="text-link"
+            *ngIf="coverPreview()"
+            (click)="clearCreateCover()"
+          >
+            Remove
+          </button>
+        </div>
+
+        <p class="field-hint">
+          JPG or PNG, up to 5 MB.
+        </p>
+
+        <img
+          class="cover-preview"
+          *ngIf="coverPreview()"
+          [src]="coverPreview()"
+          alt="Collection cover preview"
+        />
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-btn"
+            (click)="closeCreateModal()"
+            [disabled]="creating()"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="primary-btn"
+            [disabled]="creating()"
+          >
+            {{
+              creating()
+                ? 'Creating...'
+                : 'Create Collection'
+            }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- SHARE COLLECTION MODAL -->
+  <div
+    class="modal-backdrop"
+    *ngIf="showShareModal()"
+  >
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal-header">
+        <div>
+          <span class="modal-eyebrow">
+            PUBLIC LINK
+          </span>
+
+          <h2>
+            Share "{{ sharingCollection()?.name }}"
+          </h2>
+
+          <p>
+            Anyone with the link can view this collection, but nobody
+            else can change it or sign in with it.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close"
+          (click)="closeShareModal()"
+        >
+          ×
+        </button>
+      </div>
+
+      <p
+        class="share-message"
+        *ngIf="shareMessage()"
+      >
+        {{ shareMessage() }}
+      </p>
+
+      <!-- SHARING OFF -->
+      <div *ngIf="!sharingCollection()?.shareToken">
+        <p class="share-state">
+          Sharing is off. This collection is private.
+        </p>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="primary-btn"
+            [disabled]="sharingBusy()"
+            (click)="enableSharing()"
+          >
+            {{ sharingBusy() ? 'Creating link...' : 'Create public link' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- SHARING ON -->
+      <div *ngIf="sharingCollection()?.shareToken">
+        <p class="share-state">
+          Sharing is on for this collection.
+        </p>
+
+        <label class="field-label">
+          Public link
+        </label>
+
+        <input
+          class="share-link"
+          type="text"
+          [value]="shareUrl"
+          readonly
+        />
+
+        <p
+          class="field-hint"
+          *ngIf="copyMessage()"
+        >
+          {{ copyMessage() }}
+        </p>
+
+        <div class="modal-actions share-actions">
+          <button
+            type="button"
+            class="secondary-btn"
+            [disabled]="sharingBusy()"
+            (click)="disableSharing()"
+          >
+            Turn off sharing
+          </button>
+
+          <button
+            type="button"
+            class="secondary-btn"
+            [disabled]="sharingBusy()"
+            (click)="regenerateShareLink()"
+          >
+            {{ sharingBusy() ? 'Working...' : 'New link' }}
+          </button>
+
+          <button
+            type="button"
+            class="primary-btn"
+            [disabled]="sharingBusy()"
+            (click)="copyShareLink()"
+          >
+            Copy link
+          </button>
+        </div>
+
+        <p class="field-hint">
+          Creating a new link stops the old one from working.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+

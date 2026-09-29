@@ -189,3 +189,91 @@ select {
   border: 1px solid #e7dcca;
   background: white;
 }
+
+/* AI FOOD CHECK */
+.image-check-status {
+  margin: 4px 0 0;
+  color: #a3907c;
+  font-size: 13px;
+}
+
+.image-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #e7dcca;
+  background: #fdf7ec;
+  color: #6b5b45;
+  font-size: 13px;
+}
+
+.image-notice.warning {
+  border-color: #efc5ba;
+  background: #fdefec;
+  color: #9b3a20;
+}
+
+.image-notice p {
+  margin: 0;
+}
+
+.notice-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 50%;
+  background: #eadbc4;
+  color: #a36d25;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.image-notice.warning .notice-icon {
+  background: #f2d3c9;
+  color: #9b3a20;
+}
+
+.notice-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.notice-replace {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #dfd7cc;
+  background: white;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.notice-actions .text-button {
+  margin-top: 0;
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .add-recipe-page {
+    padding: 24px 18px 60px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .image-preview {
+    width: 100%;
+    height: auto;
+  }
+}

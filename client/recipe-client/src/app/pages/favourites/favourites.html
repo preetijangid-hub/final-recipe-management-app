@@ -1,0 +1,246 @@
+<div class="favourites-page">
+
+  <section class="page-heading">
+
+    <div>
+      <span class="eyebrow">
+        SAVED WITH LOVE
+      </span>
+
+      <h2>Your Favourites</h2>
+
+      <p>
+        Every recipe you have hearted, ready whenever you need it.
+      </p>
+    </div>
+
+    <a
+      class="secondary-btn"
+      routerLink="/recipes"
+    >
+      Browse recipes
+    </a>
+
+  </section>
+
+
+  <!-- SUCCESS -->
+  <div
+    class="alert success-alert"
+    *ngIf="favourites.lastSuccess()"
+  >
+    <span>✓</span>
+    {{ favourites.lastSuccess() }}
+
+    <button
+      type="button"
+      (click)="favourites.clearMessages()"
+    >
+      ×
+    </button>
+  </div>
+
+
+  <!-- ERROR -->
+  <div
+    class="alert error-alert"
+    *ngIf="
+      favourites.lastError() &&
+      favourites.favouriteRecipes().length > 0
+    "
+  >
+    <span>!</span>
+    {{ favourites.lastError() }}
+
+    <button
+      type="button"
+      (click)="favourites.clearMessages()"
+    >
+      ×
+    </button>
+  </div>
+
+
+  <main class="content-section">
+
+    <!-- LOADING -->
+    <div
+      class="state-card"
+      *ngIf="favourites.loading()"
+    >
+      <div class="spinner"></div>
+
+      <p>Gathering your favourites...</p>
+    </div>
+
+
+    <!-- ERROR STATE -->
+    <div
+      class="state-card error-state"
+      *ngIf="
+        !favourites.loading() &&
+        favourites.lastError() &&
+        favourites.favouriteRecipes().length === 0
+      "
+    >
+      <span class="state-icon">!</span>
+
+      <h3>We could not load your favourites</h3>
+
+      <p>{{ favourites.lastError() }}</p>
+
+      <button
+        type="button"
+        class="primary-btn"
+        (click)="reload()"
+      >
+        Try again
+      </button>
+    </div>
+
+
+    <!-- EMPTY STATE -->
+    <div
+      class="state-card empty-state"
+      *ngIf="
+        !favourites.loading() &&
+        !favourites.lastError() &&
+        favourites.favouriteRecipes().length === 0
+      "
+    >
+      <span class="empty-icon">♡</span>
+
+      <h3>No favourites yet</h3>
+
+      <p>
+        Tap the heart on any recipe to keep it here for later.
+      </p>
+
+      <a
+        class="primary-btn"
+        routerLink="/recipes"
+      >
+        Find recipes to save
+      </a>
+
+      <a
+        class="text-link"
+        routerLink="/my-collections"
+      >
+        Or group them into a collection
+      </a>
+    </div>
+
+
+    <!-- SAVED RECIPES -->
+    <div
+      class="favourites-grid"
+      *ngIf="
+        !favourites.loading() &&
+        favourites.favouriteRecipes().length > 0
+      "
+    >
+
+      <article
+        class="favourite-card"
+        *ngFor="let recipe of favourites.favouriteRecipes()"
+      >
+
+        <div class="favourite-card-top">
+          <span class="category-pill">
+            {{ recipe.category }}
+          </span>
+
+          <span class="saved-badge">
+            ♥ Saved
+          </span>
+        </div>
+
+
+        <div
+          class="favourite-card-image"
+          *ngIf="recipe.image"
+        >
+          <img
+            [src]="recipe.image"
+            alt=""
+          />
+        </div>
+
+        <div
+          class="favourite-card-image placeholder"
+          *ngIf="!recipe.image"
+        >
+          <span>Savoré</span>
+        </div>
+
+
+        <div class="favourite-card-body">
+          <h3>
+            {{ recipe.title }}
+          </h3>
+
+          <p class="ingredients-preview">
+            {{ getIngredients(recipe) }}
+          </p>
+
+          <div class="recipe-meta">
+
+            <span>
+              🥕
+              {{ recipe.ingredients.length }}
+              ingredients
+            </span>
+
+            <span>
+              ◉
+              {{ recipe.steps.length }}
+              steps
+            </span>
+
+            <span>
+              ★
+              {{ recipe.rating?.average ?? 0 }}
+              ({{ recipe.rating?.count ?? 0 }})
+            </span>
+
+          </div>
+        </div>
+
+
+        <div class="favourite-card-footer">
+
+          <a
+            class="view-btn"
+            [routerLink]="[
+              '/recipes',
+              recipe._id
+            ]"
+          >
+            View Recipe
+            <span>→</span>
+          </a>
+
+          <button
+            type="button"
+            class="fav-btn fav-active"
+            title="Remove from favourites"
+            [disabled]="favourites.isToggling(recipe._id)"
+            (click)="removeFavourite(recipe)"
+          >
+            {{
+              favourites.isToggling(recipe._id)
+                ? 'Removing...'
+                : '♥ Favourited'
+            }}
+          </button>
+
+        </div>
+
+      </article>
+
+    </div>
+
+  </main>
+
+</div>

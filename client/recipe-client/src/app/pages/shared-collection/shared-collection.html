@@ -1,0 +1,73 @@
+<div class="shared-page">
+
+  <header class="shared-brand">
+    <a class="brand-link" routerLink="/login">
+      <span class="brand-mark">S</span>
+      <span class="brand-name">Savoré</span>
+    </a>
+
+    <span class="brand-note">
+      A shared collection from a Savoré kitchen
+    </span>
+  </header>
+
+  <!-- LOADING -->
+  <div class="state-card" *ngIf="loading()">
+    <div class="spinner"></div>
+    <p>Opening the shared collection...</p>
+  </div>
+
+  <!-- UNAVAILABLE -->
+  <div class="state-card" *ngIf="!loading() && unavailable()">
+    <span class="state-icon">✕</span>
+
+    <h1>This link is no longer available</h1>
+
+    <p>
+      The owner may have turned sharing off, created a new link, or the
+      address may be mistyped.
+    </p>
+
+    <a class="primary-btn" routerLink="/login">
+      Go to Savoré
+    </a>
+  </div>
+
+  <!-- COLLECTION -->
+  <main class="shared-content" *ngIf="!loading() && collection()">
+    <div class="cover" *ngIf="collection()!.coverImage">
+      <img [src]="collection()!.coverImage!" alt="" />
+    </div>
+
+    <span class="eyebrow">SHARED COLLECTION</span>
+
+    <h1>{{ collection()!.name }}</h1>
+
+    <p class="description" *ngIf="collection()!.description">
+      {{ collection()!.description }}
+    </p>
+
+    <p class="count">
+      {{ collection()!.recipeCount }}
+      {{ collection()!.recipeCount === 1 ? 'recipe' : 'recipes' }}
+    </p>
+
+    <div class="recipes-grid" *ngIf="collection()!.recipes.length > 0">
+      <article class="recipe-card" *ngFor="let recipe of collection()!.recipes">
+        <div class="recipe-image">
+          <img *ngIf="recipe.image" [src]="recipe.image" alt="" />
+          <span class="recipe-fallback" *ngIf="!recipe.image">✦</span>
+        </div>
+
+        <h2>{{ recipe.title }}</h2>
+
+        <span class="recipe-category">{{ recipe.category }}</span>
+      </article>
+    </div>
+
+    <p class="empty-note" *ngIf="collection()!.recipes.length === 0">
+      This collection does not have any recipes yet.
+    </p>
+  </main>
+
+</div>

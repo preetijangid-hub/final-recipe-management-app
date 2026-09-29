@@ -99,6 +99,37 @@
             </button>
             <span class="image-hint">JPG or PNG, up to 5 MB</span>
           </div>
+
+          <!-- AI FOOD CHECK -->
+          <p class="image-check-status" *ngIf="checkingImage || foodImages.modelLoading()">
+            <span *ngIf="foodImages.modelLoading()">Preparing the image check for the first time...</span>
+            <span *ngIf="!foodImages.modelLoading()">Checking the image...</span>
+          </p>
+
+          <div
+            class="image-notice"
+            [class.warning]="imageNoticeIsWarning"
+            *ngIf="!checkingImage && !foodImages.modelLoading() && imageNotice"
+            role="status"
+          >
+            <span class="notice-icon">{{ imageNoticeIsWarning ? '!' : 'i' }}</span>
+
+            <div class="notice-body">
+              <p>{{ imageNotice }}</p>
+
+              <div class="notice-actions" *ngIf="imageNoticeIsWarning">
+                <label class="notice-replace">
+                  Choose a different image
+                  <input class="file-input" type="file" accept="image/*" (change)="onImageSelected($event)" />
+                </label>
+
+                <button class="text-button" type="button" (click)="dismissImageNotice()">
+                  Keep this image
+                </button>
+              </div>
+            </div>
+          </div>
+
           <img class="image-preview" *ngIf="previewImage" [src]="previewImage" alt="Recipe image preview" />
         </div>
       </div>

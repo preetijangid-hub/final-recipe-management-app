@@ -23,6 +23,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { Recipe } from '../../models/recipe';
 import { AuthService } from '../../services/auth';
 import { RecipeService } from '../../services/recipe';
+import { FavouritesService } from '../../services/favourites';
 import { ReviewSection } from './review-section';
 
 @Component({
@@ -37,8 +38,12 @@ export class RecipeDetails implements OnInit {
 
   private readonly router = inject(Router);
 
-  private readonly recipeService =
-    inject(RecipeService);
+  private readonly recipeService = inject(RecipeService);
+
+  private readonly favouritesService = inject(FavouritesService);
+
+  // Exposed for the favourite control in the template.
+  readonly favourites = this.favouritesService;
 
   private readonly authService =
     inject(AuthService);
@@ -55,6 +60,8 @@ export class RecipeDetails implements OnInit {
   readonly currentUser = this.authService.getStoredUser();
 
   ngOnInit(): void {
+    this.favouritesService.loadFavourites();
+
     const recipeId =
       this.route.snapshot.paramMap.get('id');
 
@@ -124,6 +131,16 @@ export class RecipeDetails implements OnInit {
     this.router.navigate([
       '/discover',
     ]);
+  }
+
+  toggleFavourite(): void {
+    if (!this.recipe?._id) {
+      return;
+    }
+
+    this.favouritesService.toggleFavourite(
+      this.recipe._id
+    );
   }
 
   getIngredients(): string[] {
