@@ -1,5 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   FormBuilder,
   FormControl,
@@ -10,21 +16,40 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subject, TimeoutError, catchError, debounceTime, distinctUntilChanged, finalize, of, switchMap, timeout } from 'rxjs';
+import { ReplaySubject, Subject, TimeoutError, catchError, debounceTime, distinctUntilChanged, finalize, merge, of, switchMap, tap, timeout } from 'rxjs';
 
-import { Recipe, RecipeListResponse, CUISINES, MEAL_CATEGORIES } from '../../models/recipe';
+import {
+  COOKING_TIME_CHOICES,
+  MIN_RATING_CHOICES,
+  Recipe,
+  RecipeListResponse,
+  RecipeSearchFilters,
+  SORT_CHOICES,
+  TrendingRecipe,
+  CUISINES,
+  MEAL_CATEGORIES,
+} from '../../models/recipe';
 import { CollectionSummary } from '../../models/collection';
 import { AuthService } from '../../services/auth';
 import { RecipeService } from '../../services/recipe';
 import { FavouritesService } from '../../services/favourites';
 import { CollectionService } from '../../services/collection';
+import { VoiceSearchService } from '../../services/voice-search';
 
 type RecipePayload = {
   title: string;
+  description: string;
+  cookingTime: number | null;
   category: string;
   mealCategory: string;
   ingredients: string[];
   steps: string[];
+};
+
+// A filter the user can remove with one click.
+type FilterChip = {
+  key: string;
+  label: string;
 };
 
 @Component({
@@ -54,10 +79,33 @@ export class Recipes {
 
   readonly cuisineOptions = CUISINES;
   readonly mealCategoryOptions = MEAL_CATEGORIES;
+  readonly sortChoices = SORT_CHOICES;
+  readonly cookingTimeChoices = COOKING_TIME_CHOICES;
+  readonly minRatingChoices = MIN_RATING_CHOICES;
+
+  // Voice search hands its transcript to the same search box.
+  readonly voice = inject(VoiceSearchService);
+
+  private readonly destroyRef = inject(DestroyRef);
 
   search = '';
   category = '';
   mealCategory = '';
+
+  sort = 'newest';
+  maxCookingTime: number | null = null;
+  minRating: number | null = null;
+
+  // "Cook With What I Have" state.
+  readonly pantryOpen = signal(false);
+  readonly pantryIngredients = signal<string[]>([]);
+  pantryInput = '';
+
+  // Trending This Week is fetched separately so a slow or failing request
+  // never delays the recipe list.
+  readonly trending = signal<TrendingRecipe[]>([]);
+  readonly trendingLoading = signal(true);
+  readonly trendingError = signal('');
 
   currentPage = 1;
   readonly pageSize = 9;
@@ -95,6 +143,11 @@ export class Recipes {
 
   private readonly searchInput$ = new Subject<string>();
 
+  // Anything that should produce a new recipe request is pushed here.
+  // Typing goes through the debounced stream below, filter and page changes
+  // use this subject directly.
+  private readonly query$ = new ReplaySubject<void>(1);
+
   readonly ingredients = this.fb.nonNullable.array([this.createRow()]);
   readonly steps = this.fb.nonNullable.array([this.createRow()]);
 
@@ -103,6 +156,8 @@ export class Recipes {
       '',
       [Validators.required, Validators.minLength(3), Validators.maxLength(100)],
     ],
+    description: ['', [Validators.maxLength(500)]],
+    cookingTime: [null, [Validators.min(1), Validators.max(600)]],
     category: [
       '',
       [Validators.required, Validators.minLength(2), Validators.maxLength(50)],
@@ -118,7 +173,9 @@ export class Recipes {
   constructor() {
     this.favouritesService.loadFavourites();
 
-    this.route.queryParams.subscribe((params) => {
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
       const incomingCategory = (params['category'] ?? '').toString();
       if (incomingCategory) {
         this.category = incomingCategory;
@@ -148,116 +205,288 @@ export class Recipes {
       }
 
       this.currentPage = 1;
-      this.loadRecipes();
+      this.requestRecipes();
     });
 
-    this.searchInput$
+    // Typing is debounced, so a request is only sent once the user pauses
+    // instead of on every keystroke.
+    const typedSearch$ = this.searchInput$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      tap((value) => {
+        this.search = value.trim();
+        this.currentPage = 1;
+      })
+    );
+
+    // switchMap cancels the previous request as soon as a newer one starts,
+    // so a slow response can never overwrite fresher results.
+    merge(typedSearch$, this.query$)
       .pipe(
-        debounceTime(250),
-        distinctUntilChanged(),
-        switchMap((value) => {
-          this.search = value.trim();
-          this.currentPage = 1;
+        tap(() => {
           this.loading.set(true);
           this.errorMessage.set('');
-
-          return this.recipeService
-            .getRecipes(this.currentPage, this.pageSize, this.search, this.category, 'newest', this.mealCategory)
-            .pipe(
-              timeout(10000),
-              catchError((error) => {
-                this.errorMessage.set(
-                  this.getErrorMessage(error, 'Unable to load recipes. Please try again.')
-                );
-
-                return of(null);
-              }),
-              finalize(() => this.loading.set(false))
-            );
-        })
+        }),
+        switchMap(() => this.fetchRecipes()),
+        takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe({
-        next: (response) => {
-          if (!response) {
-            return;
-          }
+      .subscribe((response) => {
+        this.loading.set(false);
 
-          this.recipes.set(response.recipes);
-          this.pagination.set(response.pagination);
-        },
-        error: (error) => {
-          this.errorMessage.set(this.getErrorMessage(error, 'Unable to load recipes. Please try again.'));
-        },
+        if (!response) {
+          return;
+        }
+
+        this.recipes.set(response.recipes);
+        this.pagination.set(response.pagination);
       });
+
+    this.loadTrending();
   }
 
-  private loadRecipes(): void {
-    this.loading.set(true);
-    this.errorMessage.set('');
+  // Reads the filters that are combined with the search text.
+  private searchFilters(): RecipeSearchFilters {
+    return {
+      ingredients: this.pantryIngredients(),
+      maxCookingTime: this.maxCookingTime,
+      minRating: this.minRating,
+    };
+  }
 
-    this.recipeService
-      .getRecipes(this.currentPage, this.pageSize, this.search, this.category, 'newest', this.mealCategory)
+  private fetchRecipes() {
+    return this.recipeService
+      .getRecipes(
+        this.currentPage,
+        this.pageSize,
+        this.search,
+        this.category,
+        this.sort,
+        this.mealCategory,
+        this.searchFilters()
+      )
       .pipe(
         timeout(10000),
-        finalize(() => {
-          this.loading.set(false);
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          this.recipes.set(response.recipes);
-          this.pagination.set(response.pagination);
-        },
-        error: (error) => {
+        catchError((error) => {
           this.errorMessage.set(
             this.getErrorMessage(
               error,
               'Unable to load recipes. Please try again.'
             )
           );
-        },
+
+          return of(null);
+        })
+      );
+  }
+
+  private requestRecipes(): void {
+    this.query$.next();
+  }
+
+  private loadTrending(): void {
+    this.trendingLoading.set(true);
+    this.trendingError.set('');
+
+    this.recipeService
+      .getTrendingRecipes()
+      .pipe(
+        timeout(10000),
+        catchError((error) => {
+          this.trendingError.set(
+            this.getErrorMessage(
+              error,
+              'Trending recipes are unavailable right now.'
+            )
+          );
+
+          return of(null);
+        }),
+        finalize(() => this.trendingLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((response) => {
+        this.trending.set(response?.trending ?? []);
       });
   }
 
+  // Called by the template after a create, update or delete.
   refreshRecipes(): void {
-    this.loadRecipes();
+    this.requestRecipes();
   }
 
   onSearchInput(event: Event): void {
     const target = event.target as HTMLInputElement | null;
-    this.searchInput$.next(target?.value ?? '');
+    const value = target?.value ?? '';
+
+    this.search = value;
+    this.searchInput$.next(value);
   }
 
   searchRecipes(): void {
-    this.currentPage = 1;
     this.search = this.search.trim();
-    this.refreshRecipes();
+    this.currentPage = 1;
+    this.requestRecipes();
   }
 
-  clearFilters(): void {
-    this.search = '';
-    this.category = '';
-    this.mealCategory = '';
+  // Used by the sorting control and the filter selects.
+  applyFilters(): void {
     this.currentPage = 1;
-    this.refreshRecipes();
+    this.requestRecipes();
   }
 
   nextPage(totalPages: number): void {
     if (this.currentPage < totalPages) {
       this.currentPage++;
-      this.refreshRecipes();
+      this.requestRecipes();
     }
   }
 
   previousPage(): void {
     if (this.currentPage > 1) {
       this.currentPage--;
-      this.refreshRecipes();
+      this.requestRecipes();
     }
   }
 
   getIngredients(recipe: Recipe): string {
     return recipe.ingredients.join(', ') || 'No ingredients listed';
+  }
+
+  // One chip per active filter, so any single filter can be removed again.
+  get activeFilters(): FilterChip[] {
+    const chips: FilterChip[] = [];
+
+    if (this.search.trim()) {
+      chips.push({
+        key: 'search',
+        label: `“${this.search.trim()}”`,
+      });
+    }
+
+    if (this.category) {
+      chips.push({
+        key: 'category',
+        label: this.category,
+      });
+    }
+
+    if (this.mealCategory) {
+      chips.push({
+        key: 'mealCategory',
+        label: this.mealCategory,
+      });
+    }
+
+    if (this.maxCookingTime) {
+      chips.push({
+        key: 'maxCookingTime',
+        label: `Up to ${this.maxCookingTime} min`,
+      });
+    }
+
+    if (this.minRating) {
+      chips.push({
+        key: 'minRating',
+        label: `${this.minRating}★ and above`,
+      });
+    }
+
+    for (const ingredient of this.pantryIngredients()) {
+      chips.push({
+        key: `ingredient:${ingredient}`,
+        label: ingredient,
+      });
+    }
+
+    return chips;
+  }
+
+  removeFilter(key: string): void {
+    if (key === 'search') {
+      this.search = '';
+    } else if (key === 'category') {
+      this.category = '';
+    } else if (key === 'mealCategory') {
+      this.mealCategory = '';
+    } else if (key === 'maxCookingTime') {
+      this.maxCookingTime = null;
+    } else if (key === 'minRating') {
+      this.minRating = null;
+    } else if (key.startsWith('ingredient:')) {
+      const name = key.slice('ingredient:'.length);
+
+      this.pantryIngredients.update((list) =>
+        list.filter((item) => item !== name)
+      );
+    }
+
+    this.applyFilters();
+  }
+
+  togglePantry(): void {
+    this.pantryOpen.update((open) => !open);
+  }
+
+  addPantryIngredient(): void {
+    const name = this.pantryInput.trim();
+
+    if (name.length < 2) {
+      this.saveError.set('Please type at least two letters of an ingredient.');
+      return;
+    }
+
+    const alreadyPicked = this.pantryIngredients().some(
+      (item) => item.toLowerCase() === name.toLowerCase()
+    );
+
+    this.pantryInput = '';
+
+    if (alreadyPicked) {
+      return;
+    }
+
+    this.pantryIngredients.update((list) => [...list, name]);
+    this.saveError.set('');
+    this.applyFilters();
+  }
+
+  removePantryIngredient(name: string): void {
+    this.pantryIngredients.update((list) =>
+      list.filter((item) => item !== name)
+    );
+
+    this.applyFilters();
+  }
+
+  toggleVoiceSearch(): void {
+    if (this.voice.listening()) {
+      this.voice.stop();
+      return;
+    }
+
+    this.voice.start((transcript) => {
+      // The transcript travels through the same debounced search flow as
+      // text typed into the box.
+      this.searchInput$.next(transcript);
+    });
+  }
+
+  hasCookingTime(recipe: Recipe): boolean {
+    return !!recipe.cookingTime;
+  }
+
+  clearFilters(): void {
+    this.search = '';
+    this.category = '';
+    this.mealCategory = '';
+    this.sort = 'newest';
+    this.maxCookingTime = null;
+    this.minRating = null;
+    this.pantryIngredients.set([]);
+    this.pantryInput = '';
+    this.currentPage = 1;
+
+    this.requestRecipes();
   }
 
   toggleFavourite(recipeId: string): void {
@@ -460,6 +689,8 @@ export class Recipes {
 
     this.recipeForm.reset({
       title: recipe.title,
+      description: recipe.description ?? '',
+      cookingTime: recipe.cookingTime ?? null,
       category: CUISINES.includes(recipe.category) ? recipe.category : '',
       mealCategory: recipe.mealCategory || '',
     });
@@ -623,7 +854,13 @@ export class Recipes {
   }
 
   resetForm(): void {
-    this.recipeForm.reset({ title: '', category: '', mealCategory: '' });
+    this.recipeForm.reset({
+      title: '',
+      description: '',
+      cookingTime: null,
+      category: '',
+      mealCategory: '',
+    });
     this.fillRows(this.ingredients, ['']);
     this.fillRows(this.steps, ['']);
   }
@@ -652,8 +889,17 @@ export class Recipes {
       return null;
     }
 
+    const description = String(this.recipeForm.value.description ?? '').trim();
+    const cookingTime = this.recipeForm.value.cookingTime;
+    const minutes = Number(cookingTime);
+
     return {
       title: this.recipeForm.value.title.trim(),
+      description,
+      cookingTime:
+        cookingTime === null || cookingTime === '' || Number.isNaN(minutes)
+          ? null
+          : minutes,
       category: this.recipeForm.value.category.trim(),
       mealCategory: this.recipeForm.value.mealCategory.trim(),
       ingredients,

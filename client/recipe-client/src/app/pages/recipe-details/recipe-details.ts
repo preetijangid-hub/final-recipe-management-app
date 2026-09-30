@@ -1,6 +1,7 @@
 import {
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   OnInit,
   inject,
 } from '@angular/core';
@@ -10,11 +11,15 @@ import {
   ActivatedRoute,
   Router,
 } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import {
   catchError,
   finalize,
+  map,
   of,
+  switchMap,
+  tap,
   timeout,
 } from 'rxjs';
 
@@ -25,16 +30,19 @@ import { AuthService } from '../../services/auth';
 import { RecipeService } from '../../services/recipe';
 import { FavouritesService } from '../../services/favourites';
 import { ReviewSection } from './review-section';
+import { SimilarRecipes } from './similar-recipes';
 
 @Component({
   selector: 'app-recipe-details',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, ReviewSection],
+  imports: [CommonModule, MatButtonModule, ReviewSection, SimilarRecipes],
   templateUrl: './recipe-details.html',
   styleUrl: './recipe-details.css',
 })
 export class RecipeDetails implements OnInit {
   private readonly route = inject(ActivatedRoute);
+
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly router = inject(Router);
 
@@ -62,68 +70,45 @@ export class RecipeDetails implements OnInit {
   ngOnInit(): void {
     this.favouritesService.loadFavourites();
 
-    const recipeId =
-      this.route.snapshot.paramMap.get('id');
-
-    if (!recipeId) {
-      this.loading = false;
-
-      this.errorMessage =
-        'Recipe ID was not found.';
-
-      this.changeDetector.detectChanges();
-
-      return;
-    }
-
-    this.loadRecipe(recipeId);
-  }
-
-  loadRecipe(recipeId: string): void {
-    this.loading = true;
-
-    this.errorMessage = '';
-
-    this.recipeService
-      .getRecipeById(recipeId)
+    this.route.paramMap
       .pipe(
-        timeout(10000),
-
-        catchError((error) => {
-          if (
-            error?.name === 'TimeoutError'
-          ) {
-            this.errorMessage =
-              'The recipe request took too long. Please check that the backend is running.';
-          } else {
-            this.errorMessage =
-              error?.error?.message ||
-              'Unable to load this recipe.';
-          }
-
-          return of(null);
+        map((params) => params.get('id')),
+        tap((recipeId) => {
+          this.recipe = null;
+          this.loading = !!recipeId;
+          this.errorMessage = recipeId
+            ? ''
+            : 'Recipe ID was not found.';
         }),
-
-        finalize(() => {
-          this.loading = false;
-
-          this.changeDetector.detectChanges();
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          if (response?.recipe) {
-            this.recipe = response.recipe;
+        switchMap((recipeId) => {
+          if (!recipeId) {
+            return of(null);
           }
 
-          this.changeDetector.detectChanges();
-        },
+          return this.recipeService
+            .getRecipeById(recipeId)
+            .pipe(
+              timeout(10000),
+              catchError((error) => {
+                if (error?.name === 'TimeoutError') {
+                  this.errorMessage =
+                    'The recipe request took too long. Please check that the backend is running.';
+                } else {
+                  this.errorMessage =
+                    error?.error?.message ||
+                    'Unable to load this recipe.';
+                }
 
-        error: () => {
-          this.loading = false;
-
-          this.changeDetector.detectChanges();
-        },
+                return of(null);
+              })
+            );
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((response) => {
+        this.recipe = response?.recipe ?? null;
+        this.loading = false;
+        this.changeDetector.detectChanges();
       });
   }
 

@@ -11,7 +11,9 @@ import {
   RateResponse,
   Recipe,
   RecipeListResponse,
+  RecipeSearchFilters,
   RecipeStatsResponse,
+  TrendingResponse,
 } from '../models/recipe';
 import { environment } from '../../environments/environment';
 
@@ -30,7 +32,8 @@ export class RecipeService {
     search = '',
     category = '',
     sort = 'newest',
-    mealCategory = ''
+    mealCategory = '',
+    filters: RecipeSearchFilters = {}
   ): Observable<RecipeListResponse> {
     let params = new HttpParams()
       .set('page', page)
@@ -58,9 +61,39 @@ export class RecipeService {
       );
     }
 
+    // Every picked pantry ingredient is sent as its own parameter, which is
+    // what the "Cook With What I Have" filter expects.
+    for (const ingredient of filters.ingredients ?? []) {
+      const name = ingredient.trim();
+
+      if (name) {
+        params = params.append('ingredients', name);
+      }
+    }
+
+    if (filters.maxCookingTime) {
+      params = params.set(
+        'maxCookingTime',
+        filters.maxCookingTime
+      );
+    }
+
+    if (filters.minRating) {
+      params = params.set(
+        'minRating',
+        filters.minRating
+      );
+    }
+
     return this.http.get<RecipeListResponse>(
       this.apiUrl,
       { params }
+    );
+  }
+
+  getTrendingRecipes(): Observable<TrendingResponse> {
+    return this.http.get<TrendingResponse>(
+      `${this.apiUrl}/trending`
     );
   }
 
@@ -95,6 +128,8 @@ export class RecipeService {
   createRecipe(
     recipe: {
       title: string;
+      description?: string;
+      cookingTime?: number | null;
       ingredients: string[];
       steps: string[];
       category: string;
@@ -114,6 +149,8 @@ export class RecipeService {
     id: string,
     recipe: {
       title: string;
+      description?: string;
+      cookingTime?: number | null;
       ingredients: string[];
       steps: string[]; 
       category: string;

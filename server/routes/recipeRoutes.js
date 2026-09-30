@@ -6,6 +6,7 @@ const {
   getRecipes,
   getMyRecipes,
   getRecipeStats,
+  getTrendingThisWeek,
   getRecipeById,
   getRecipeCompatibility,
   updateRecipe,
@@ -61,6 +62,34 @@ const recipeFieldRules = [
     .trim()
     .isLength({ max: 500 })
     .withMessage("Image URL must be at most 500 characters."),
+
+  // Optional smart search fields. They may be omitted, sent as null or sent
+  // as an empty string, in which case the recipe simply has no description
+  // or cooking time.
+  body("description")
+    .custom(
+      (value) =>
+        value === undefined ||
+        value === null ||
+        (typeof value === "string" && value.trim().length <= 500)
+    )
+    .withMessage(
+      "Recipe description must be text of at most 500 characters."
+    ),
+
+  body("cookingTime")
+    .custom((value) => {
+      if (value === undefined || value === null || value === "") {
+        return true;
+      }
+
+      const minutes = Number(value);
+
+      return Number.isInteger(minutes) && minutes >= 1 && minutes <= 600;
+    })
+    .withMessage(
+      "Cooking time must be a whole number of minutes between 1 and 600."
+    ),
 ];
 
 // New recipes must pick from the cuisine list. Updates keep whatever category
@@ -154,6 +183,11 @@ router
 
 router.get("/stats", protect, getRecipeStats);
 router.get("/mine", protect, getMyRecipes);
+
+// Public, read-only list of the recipes collecting the most reviews this
+// week. It has to be registered before "/:id" so "trending" is not treated
+// as a recipe id.
+router.get("/trending", optionalAuth, getTrendingThisWeek);
 
 router
   .route("/:id")

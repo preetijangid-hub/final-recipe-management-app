@@ -1,7 +1,10 @@
 const Recipe = require("../models/Recipe");
 const User = require("../models/User");
 const { evaluateCompatibility } = require("../utils/compatibility");
-const { getRecipeStats } = require("./recipeStatsController");
+const {
+  getRecipeStats,
+  getTrendingThisWeek,
+} = require("./recipeStatsController");
 
 const {
   SPICE_LEVELS,
@@ -11,6 +14,7 @@ const {
   summarizeRating,
   toObjectId,
   buildFilter,
+  parseSearchFilters,
   validateRecipePayload,
   cleanRecipeArrays,
   SORT_OPTIONS,
@@ -18,6 +22,10 @@ const {
 } = require("../utils/recipeHelpers");
 
 // GET /api/recipes
+// Supports free-text search, cuisine/meal filters, a "Cook With What I Have"
+// ingredient list, a maximum cooking time, a minimum rating and sorting.
+// Invalid filter values are ignored so the list can never be broken by a
+// hand written query string.
 const getRecipes = async (req, res, next) => {
   try {
     const {
@@ -38,10 +46,13 @@ const getRecipes = async (req, res, next) => {
 
     const skip = (currentPage - 1) * pageLimit;
 
+    const filters = parseSearchFilters(req.query);
+
     const match = buildFilter(
       search,
       category,
-      mealCategory
+      mealCategory,
+      filters
     );
 
     const sortStage =
@@ -189,6 +200,28 @@ const getRecipeCompatibility = async (
   }
 };
 
+// The two fields behind the smart search filters. Both are optional, so an
+// older client that does not send them simply stores an empty description
+// and no cooking time.
+const readSearchFields = (body = {}) => {
+  const description =
+    typeof body.description === "string"
+      ? body.description.trim()
+      : "";
+
+  const hasCookingTime =
+    body.cookingTime !== undefined &&
+    body.cookingTime !== null &&
+    body.cookingTime !== "";
+
+  return {
+    description,
+    cookingTime: hasCookingTime
+      ? Number(body.cookingTime)
+      : null,
+  };
+};
+
 // POST /api/recipes
 const createRecipe = async (
   req,
@@ -236,8 +269,12 @@ const createRecipe = async (
       });
     }
 
+    const searchFields = readSearchFields(req.body);
+
     const recipe = await Recipe.create({
       title: title.trim(),
+      description: searchFields.description,
+      cookingTime: searchFields.cookingTime,
       category: category.trim(),
       mealCategory: mealCategory.trim(),
       ingredients: cleaned.cleanIngredients,
@@ -368,6 +405,16 @@ const updateRecipe = async (
     recipe.ingredients =
       cleaned.cleanIngredients;
     recipe.steps = cleaned.cleanSteps;
+
+    const searchFields = readSearchFields(req.body);
+
+    recipe.description = searchFields.description;
+
+    if (searchFields.cookingTime !== null) {
+      recipe.cookingTime = searchFields.cookingTime;
+    } else {
+      recipe.cookingTime = undefined;
+    }
 
     if (typeof image === "string") {
       recipe.image = image.trim();
@@ -593,6 +640,7 @@ module.exports = {
   getRecipes,
   getMyRecipes,
   getRecipeStats,
+  getTrendingThisWeek,
   getRecipeById,
   getRecipeCompatibility,
   createRecipe,

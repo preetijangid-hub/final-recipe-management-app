@@ -49,6 +49,20 @@ const recipeSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    description: {
+      // Optional short summary. Older recipes simply have none.
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: "",
+    },
+    cookingTime: {
+      // Total cooking time in minutes. Recipes created before this field
+      // existed keep it unset so they are not treated as instant recipes.
+      type: Number,
+      min: 1,
+      max: 600,
+    },
     ingredients: {
       type: [String],
       required: true,
@@ -112,6 +126,28 @@ recipeSchema.index({ category: 1 });
 recipeSchema.index({ mealCategory: 1 });
 recipeSchema.index({ orderCount: -1 });
 recipeSchema.index({ createdAt: -1 });
+
+// Free-text index behind the search box. Only one text index is allowed per
+// collection, so every searchable recipe field is listed here. Titles weigh
+// the most because a title match is usually the one users mean.
+recipeSchema.index(
+  {
+    title: "text",
+    description: "text",
+    ingredients: "text",
+  },
+  {
+    name: "recipe_search_text",
+    weights: {
+      title: 5,
+      ingredients: 3,
+      description: 1,
+    },
+  }
+);
+
+// Supporting index for the maximum cooking time filter and its sorting.
+recipeSchema.index({ cookingTime: 1 });
 
 const Recipe = mongoose.model("Recipe", recipeSchema);
 

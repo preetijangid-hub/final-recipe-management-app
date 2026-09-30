@@ -42,6 +42,10 @@ const reviewSchema = new mongoose.Schema(
 reviewSchema.index({ user: 1, recipe: 1 }, { unique: true });
 reviewSchema.index({ recipe: 1, createdAt: -1 });
 
+// The weekly trending list queries by review date only, which the index
+// above cannot serve because its first field is the recipe.
+reviewSchema.index({ createdAt: -1 });
+
 const Review = mongoose.model("Review", reviewSchema);
 
 module.exports = Review;

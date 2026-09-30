@@ -40,6 +40,92 @@
   </section>
 
 
+  <!-- TRENDING THIS WEEK -->
+  <section class="trending-section">
+
+    <div class="trending-heading">
+      <div>
+        <span>FRESH THIS WEEK</span>
+        <h3>Trending This Week</h3>
+        <p>
+          Ranked by the reviews recipes collected since Monday.
+        </p>
+      </div>
+
+      <a class="trending-link" routerLink="/recipes">
+        Browse all recipes →
+      </a>
+    </div>
+
+    <p
+      class="trending-state"
+      *ngIf="trendingLoading()"
+    >
+      Gathering this week's reviews...
+    </p>
+
+    <p
+      class="trending-state"
+      *ngIf="!trendingLoading() && trendingError()"
+    >
+      {{ trendingError() }}
+    </p>
+
+    <p
+      class="trending-state"
+      *ngIf="
+        !trendingLoading() &&
+        !trendingError() &&
+        trending().length === 0
+      "
+    >
+      No reviews yet this week. Rate a recipe and it will appear here.
+    </p>
+
+    <div
+      class="trending-row"
+      *ngIf="!trendingLoading() && trending().length > 0"
+    >
+      <a
+        class="trending-card"
+        *ngFor="let item of trending(); let rank = index"
+        [routerLink]="['/recipes', item._id]"
+      >
+        <span class="trending-rank">
+          {{ rank + 1 }}
+        </span>
+
+        <div class="trending-thumb">
+          <img
+            *ngIf="item.image"
+            [src]="item.image"
+            alt=""
+          />
+
+          <span *ngIf="!item.image">🍽️</span>
+        </div>
+
+        <div class="trending-body">
+          <h4>
+            {{ item.title }}
+          </h4>
+
+          <p class="trending-meta">
+            <span>★ {{ item.weekly.averageRating }}</span>
+
+            <span>
+              {{ item.weekly.reviews }}
+              {{ item.weekly.reviews === 1 ? 'review' : 'reviews' }}
+              this week
+            </span>
+          </p>
+        </div>
+      </a>
+    </div>
+
+  </section>
+
+
   <!-- SUCCESS -->
   <div
     class="alert success-alert"
@@ -111,7 +197,7 @@
 
     <div class="filter-heading">
       <span>EXPLORE</span>
-      <h3>Your recipes</h3>
+      <h3>Search and discover</h3>
     </div>
 
     <div class="filters">
@@ -123,16 +209,83 @@
           type="text"
           [(ngModel)]="search"
           name="search"
-          placeholder="Search recipes..."
+          placeholder="Search by name, ingredient or description..."
           (input)="onSearchInput($event)"
           (keyup.enter)="searchRecipes()"
         />
+
+        <button
+          type="button"
+          class="voice-btn"
+          *ngIf="voice.supported"
+          [class.listening]="voice.listening()"
+          [attr.aria-label]="
+            voice.listening() ? 'Stop voice search' : 'Search by voice'
+          "
+          [title]="
+            voice.listening() ? 'Stop listening' : 'Search by voice'
+          "
+          (click)="toggleVoiceSearch()"
+        >
+          {{ voice.listening() ? '◉' : '🎙' }}
+        </button>
       </div>
+
+      <select
+        [(ngModel)]="sort"
+        name="sort"
+        aria-label="Sort recipes"
+        (change)="applyFilters()"
+      >
+        <option
+          *ngFor="let choice of sortChoices"
+          [value]="choice.value"
+        >
+          {{ choice.label }}
+        </option>
+      </select>
+
+      <select
+        [(ngModel)]="maxCookingTime"
+        name="maxCookingTime"
+        aria-label="Maximum cooking time"
+        (change)="applyFilters()"
+      >
+        <option [ngValue]="null">
+          Any cooking time
+        </option>
+
+        <option
+          *ngFor="let minutes of cookingTimeChoices"
+          [ngValue]="minutes"
+        >
+          Up to {{ minutes }} min
+        </option>
+      </select>
+
+      <select
+        [(ngModel)]="minRating"
+        name="minRating"
+        aria-label="Minimum rating"
+        (change)="applyFilters()"
+      >
+        <option [ngValue]="null">
+          Any rating
+        </option>
+
+        <option
+          *ngFor="let rating of minRatingChoices"
+          [ngValue]="rating"
+        >
+          {{ rating }}★ and above
+        </option>
+      </select>
 
       <select
         [(ngModel)]="category"
         name="category"
-        (change)="searchRecipes()"
+        aria-label="Cuisine"
+        (change)="applyFilters()"
       >
         <option value="">
           All cuisines
@@ -149,7 +302,8 @@
       <select
         [(ngModel)]="mealCategory"
         name="mealCategory"
-        (change)="searchRecipes()"
+        aria-label="Meal category"
+        (change)="applyFilters()"
       >
         <option value="">
           All meal categories
@@ -162,6 +316,15 @@
           {{ mealCategory }}
         </option>
       </select>
+
+      <button
+        type="button"
+        class="pantry-btn"
+        [class.pantry-active]="pantryOpen()"
+        (click)="togglePantry()"
+      >
+        🧺 Cook With What I Have
+      </button>
 
       <button
         type="button"
@@ -179,6 +342,127 @@
         Clear
       </button>
 
+    </div>
+
+
+    <!-- VOICE SEARCH MESSAGE -->
+    <p
+      class="voice-notice"
+      *ngIf="voice.errorMessage()"
+    >
+      <span>🎙</span>
+
+      {{ voice.errorMessage() }}
+
+      <button
+        type="button"
+        (click)="voice.clearError()"
+      >
+        ×
+      </button>
+    </p>
+
+    <p
+      class="voice-notice listening-notice"
+      *ngIf="voice.listening()"
+    >
+      Listening... say the name of a recipe or an ingredient.
+    </p>
+
+
+    <!-- COOK WITH WHAT I HAVE -->
+    <div
+      class="pantry-panel"
+      *ngIf="pantryOpen()"
+    >
+
+      <div class="pantry-copy">
+        <span>COOK WITH WHAT I HAVE</span>
+
+        <p>
+          Add the ingredients you have at home. A recipe shows up when it
+          uses all of them.
+        </p>
+      </div>
+
+      <div class="pantry-form">
+        <input
+          type="text"
+          [(ngModel)]="pantryInput"
+          name="pantryInput"
+          placeholder="e.g. Paneer"
+          maxlength="50"
+          (keyup.enter)="addPantryIngredient()"
+        />
+
+        <button
+          type="button"
+          class="primary-btn small"
+          (click)="addPantryIngredient()"
+        >
+          Add ingredient
+        </button>
+      </div>
+
+      <p
+        class="pantry-empty"
+        *ngIf="pantryIngredients().length === 0"
+      >
+        Nothing picked yet.
+      </p>
+
+      <div
+        class="pantry-picked"
+        *ngIf="pantryIngredients().length > 0"
+      >
+        <button
+          type="button"
+          class="pantry-chip"
+          *ngFor="let ingredient of pantryIngredients()"
+          (click)="removePantryIngredient(ingredient)"
+        >
+          {{ ingredient }}
+          <span>×</span>
+        </button>
+
+        <button
+          type="button"
+          class="pantry-clear"
+          (click)="clearFilters()"
+        >
+          Reset
+        </button>
+      </div>
+
+    </div>
+
+
+    <!-- ACTIVE FILTER CHIPS -->
+    <div
+      class="active-filters"
+      *ngIf="activeFilters.length > 0"
+    >
+      <span class="active-label">
+        Active filters
+      </span>
+
+      <button
+        type="button"
+        class="filter-chip"
+        *ngFor="let chip of activeFilters"
+        (click)="removeFilter(chip.key)"
+      >
+        {{ chip.label }}
+        <span>×</span>
+      </button>
+
+      <button
+        type="button"
+        class="clear-chips"
+        (click)="clearFilters()"
+      >
+        Clear all
+      </button>
     </div>
 
   </section>
@@ -244,8 +528,9 @@
           </h3>
 
           <p>
-            Try another search or create your
-            first recipe.
+            Try another word, remove a filter, or create
+            your first recipe. Search matches whole words,
+            so “paneer” finds a recipe while “pane” does not.
           </p>
 
           <button
@@ -256,6 +541,22 @@
             Create Recipe
           </button>
         </div>
+
+
+        <!-- RESULT SUMMARY -->
+        <p
+          class="result-summary"
+          *ngIf="pagination() as p"
+        >
+          <span *ngIf="p.total > 0">
+            {{ p.total }}
+            {{ p.total === 1 ? 'recipe' : 'recipes' }} found
+          </span>
+
+          <span *ngIf="p.total === 0">
+            No matching recipes
+          </span>
+        </p>
 
 
         <!-- GRID -->
@@ -323,6 +624,11 @@
                   ◉
                   {{ recipe.steps.length }}
                   steps
+                </span>
+
+                <span *ngIf="hasCookingTime(recipe)">
+                  ⏱
+                  {{ recipe.cookingTime }} min
                 </span>
 
                 <span>
@@ -527,6 +833,53 @@
           >
             Title must be between
             3 and 100 characters.
+          </small>
+
+        </div>
+
+
+        <!-- DESCRIPTION -->
+        <div class="form-group">
+
+          <label for="add-description">
+            Short description
+          </label>
+
+          <textarea
+            id="add-description"
+            rows="2"
+            formControlName="description"
+            maxlength="500"
+            placeholder="One line about this dish (optional)"
+          ></textarea>
+
+        </div>
+
+
+        <!-- COOKING TIME -->
+        <div class="form-group">
+
+          <label for="add-cooking-time">
+            Cooking time (minutes)
+          </label>
+
+          <input
+            id="add-cooking-time"
+            type="number"
+            min="1"
+            max="600"
+            formControlName="cookingTime"
+            placeholder="e.g. 45"
+          />
+
+          <small
+            class="field-error"
+            *ngIf="
+              recipeForm.get('cookingTime')?.touched &&
+              recipeForm.get('cookingTime')?.invalid
+            "
+          >
+            Cooking time must be between 1 and 600 minutes.
           </small>
 
         </div>
@@ -850,6 +1203,53 @@
           >
             Title must be between
             3 and 100 characters.
+          </small>
+
+        </div>
+
+
+        <!-- DESCRIPTION -->
+        <div class="form-group">
+
+          <label for="edit-description">
+            Short description
+          </label>
+
+          <textarea
+            id="edit-description"
+            rows="2"
+            formControlName="description"
+            maxlength="500"
+            placeholder="One line about this dish (optional)"
+          ></textarea>
+
+        </div>
+
+
+        <!-- COOKING TIME -->
+        <div class="form-group">
+
+          <label for="edit-cooking-time">
+            Cooking time (minutes)
+          </label>
+
+          <input
+            id="edit-cooking-time"
+            type="number"
+            min="1"
+            max="600"
+            formControlName="cookingTime"
+            placeholder="e.g. 45"
+          />
+
+          <small
+            class="field-error"
+            *ngIf="
+              recipeForm.get('cookingTime')?.touched &&
+              recipeForm.get('cookingTime')?.invalid
+            "
+          >
+            Cooking time must be between 1 and 600 minutes.
           </small>
 
         </div>

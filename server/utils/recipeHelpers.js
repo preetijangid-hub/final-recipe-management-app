@@ -12,6 +12,8 @@ const getUserId = (req) =>
 const mapRecipe = (doc) => ({
   _id: doc._id,
   title: doc.title,
+  description: doc.description ?? "",
+  cookingTime: doc.cookingTime ?? null,
   category: doc.category,
   mealCategory: doc.mealCategory ?? "",
   image: doc.image ?? "",
@@ -68,32 +70,83 @@ const toObjectId = (userId) =>
 const escapeRegex = (value) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-const buildFilter = (search = "", category = "", mealCategory = "") => {
+// Bounds for the smart search filters. Values outside these ranges are
+// ignored instead of failing the request, so a stray query string can
+// never break recipe browsing.
+const MAX_COOKING_TIME_MINUTES = 600;
+const MAX_INGREDIENT_FILTERS = 10;
+
+const parseIngredientFilter = (value) => {
+  const raw = Array.isArray(value) ? value : String(value ?? "").split(",");
+
+  const ingredients = raw
+    .map((item) => String(item).trim())
+    .filter((item) => item.length > 0)
+    .map((item) => item.slice(0, 50));
+
+  // Duplicates would only repeat the same condition in the query.
+  return [...new Set(ingredients)].slice(0, MAX_INGREDIENT_FILTERS);
+};
+
+const parseMaxCookingTime = (value) => {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const minutes = Number(value);
+
+  if (
+    !Number.isFinite(minutes) ||
+    minutes < 1 ||
+    minutes > MAX_COOKING_TIME_MINUTES
+  ) {
+    return null;
+  }
+
+  return Math.round(minutes);
+};
+
+const parseMinRating = (value) => {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const rating = Number(value);
+
+  if (!Number.isFinite(rating) || rating <= 0 || rating > 5) {
+    return null;
+  }
+
+  return Math.round(rating * 10) / 10;
+};
+
+// Turns the raw query string of GET /api/recipes into the filter values the
+// search box, the sorting control and the "Cook With What I Have" picker use.
+const parseSearchFilters = (query = {}) => ({
+  ingredients: parseIngredientFilter(query.ingredients),
+  maxCookingTime: parseMaxCookingTime(query.maxCookingTime),
+  minRating: parseMinRating(query.minRating),
+});
+
+const buildFilter = (
+  search = "",
+  category = "",
+  mealCategory = "",
+  filters = {}
+) => {
   const filter = {};
 
-  if (search.trim()) {
-    const term = escapeRegex(search.trim());
+  const ingredients = filters.ingredients ?? [];
+  const maxCookingTime = filters.maxCookingTime ?? null;
+  const minRating = filters.minRating ?? null;
 
-    filter.$or = [
-      {
-        title: {
-          $regex: term,
-          $options: "i",
-        },
-      },
-      {
-        category: {
-          $regex: term,
-          $options: "i",
-        },
-      },
-      {
-        ingredients: {
-          $regex: term,
-          $options: "i",
-        },
-      },
-    ];
+  // Text search runs through the compound text index on title,
+  // description and ingredients. Extra whitespace is collapsed because the
+  // index tokenises on single spaces.
+  if (search.trim()) {
+    filter.$text = {
+      $search: search.trim().replace(/\s+/g, " "),
+    };
   }
 
   if (category.trim()) {
@@ -107,6 +160,41 @@ const buildFilter = (search = "", category = "", mealCategory = "") => {
     filter.mealCategory = {
       $regex: escapeRegex(mealCategory.trim()),
       $options: "i",
+    };
+  }
+
+  // "Cook With What I Have": every picked ingredient has to be present,
+  // which is what $all checks on the ingredients array.
+  if (ingredients.length > 0) {
+    filter.ingredients = {
+      $all: ingredients.map(
+        (item) => new RegExp(escapeRegex(item), "i")
+      ),
+    };
+  }
+
+  // Recipes without a cooking time simply do not match this filter.
+  if (maxCookingTime) {
+    filter.cookingTime = {
+      $lte: maxCookingTime,
+    };
+  }
+
+  // The average is computed inside the query so recipes without any
+  // rating are left out instead of being counted as zero stars.
+  if (minRating) {
+    filter.$expr = {
+      $gte: [
+        {
+          $ifNull: [
+            {
+              $avg: "$ratings.value",
+            },
+            0,
+          ],
+        },
+        minRating,
+      ],
     };
   }
 
@@ -168,6 +256,40 @@ const validateRecipePayload = (payload, isUpdate = false) => {
     return `Sweetness level must be one of: ${SWEETNESS_LEVELS.join(", ")}.`;
   }
 
+  return validateOptionalSearchFields(payload);
+};
+
+// Optional fields are only checked when the client sends them, so older
+// clients that know nothing about them keep working.
+const validateOptionalSearchFields = (payload = {}) => {
+  const { description, cookingTime } = payload;
+
+  if (description !== undefined && description !== null) {
+    if (typeof description !== "string") {
+      return "Recipe description must be text.";
+    }
+
+    if (description.trim().length > 500) {
+      return "Recipe description must be at most 500 characters.";
+    }
+  }
+
+  if (
+    cookingTime !== undefined &&
+    cookingTime !== null &&
+    cookingTime !== ""
+  ) {
+    const minutes = Number(cookingTime);
+
+    if (
+      !Number.isInteger(minutes) ||
+      minutes < 1 ||
+      minutes > MAX_COOKING_TIME_MINUTES
+    ) {
+      return `Cooking time must be a whole number of minutes between 1 and ${MAX_COOKING_TIME_MINUTES}.`;
+    }
+  }
+
   return null;
 };
 
@@ -212,6 +334,19 @@ const SORT_OPTIONS = {
   rating: {
     averageRating: -1,
     ratingCount: -1,
+    createdAt: -1,
+  },
+  reviewed: {
+    ratingCount: -1,
+    averageRating: -1,
+    createdAt: -1,
+  },
+  cookingTimeAsc: {
+    cookingTime: 1,
+    createdAt: -1,
+  },
+  cookingTimeDesc: {
+    cookingTime: -1,
     createdAt: -1,
   },
   title: {
@@ -332,6 +467,8 @@ const buildEnrichedPipeline = (
     {
       $project: {
         title: 1,
+        description: 1,
+        cookingTime: 1,
         category: 1,
         mealCategory: 1,
         image: 1,
@@ -360,11 +497,13 @@ const buildEnrichedPipeline = (
 module.exports = {
   SPICE_LEVELS,
   SWEETNESS_LEVELS,
+  MAX_COOKING_TIME_MINUTES,
   getUserId,
   mapRecipe,
   summarizeRating,
   toObjectId,
   buildFilter,
+  parseSearchFilters,
   validateRecipePayload,
   cleanRecipeArrays,
   SORT_OPTIONS,

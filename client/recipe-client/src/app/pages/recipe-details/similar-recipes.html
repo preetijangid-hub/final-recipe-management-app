@@ -1,0 +1,97 @@
+<section class="similar-section">
+
+  <div class="similar-heading">
+    <div>
+      <span>SAVORÉ AI · RUNS IN YOUR BROWSER</span>
+
+      <h3>Similar recipes</h3>
+
+      <p>
+        Ingredients, title and description are compared with an
+        embedding model on this device. Nothing about your
+        recipes is sent to an external AI service.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="ai-btn"
+      [disabled]="searching()"
+      (click)="run()"
+    >
+      {{ searching() ? 'Comparing...' : '✨ Suggest similar recipes' }}
+    </button>
+  </div>
+
+  <p
+    class="ai-state"
+    *ngIf="searching() && embeddings.modelLoading()"
+  >
+    Downloading the embedding model for the first time. You can keep
+    browsing while it loads.
+  </p>
+
+  <p
+    class="ai-state"
+    *ngIf="searching() && !embeddings.modelLoading()"
+  >
+    Comparing ingredients and descriptions...
+  </p>
+
+  <p
+    class="ai-state ai-error"
+    *ngIf="!searching() && message()"
+  >
+    {{ message() }}
+  </p>
+
+  <p
+    class="ai-state"
+    *ngIf="
+      !searching() &&
+      !message() &&
+      embeddings.unavailable()
+    "
+  >
+    The AI model could not be loaded on this device, so suggestions
+    are unavailable. Search still works as usual.
+  </p>
+
+  <div
+    class="ai-results"
+    *ngIf="suggestions().length > 0"
+  >
+    <a
+      class="ai-card"
+      *ngFor="let item of suggestions()"
+      [routerLink]="['/recipes', item.recipe._id]"
+    >
+      <span class="ai-badge">
+        AI match {{ matchPercent(item.score) }}%
+      </span>
+
+      <h4>
+        {{ item.recipe.title }}
+      </h4>
+
+      <p class="ai-card-text">
+        {{ shortText(item.recipe) }}
+      </p>
+
+      <small>
+        {{ item.recipe.category }}
+        ·
+        {{ item.recipe.rating?.average ?? 0 }}★
+      </small>
+    </a>
+  </div>
+
+  <p
+    class="ai-disclaimer"
+    *ngIf="suggestions().length > 0"
+  >
+    AI suggestions are separate from normal search results and only
+    reflect how similar the recipes read.
+  </p>
+
+</section>

@@ -97,6 +97,8 @@ export class AddRecipePage {
 
   readonly recipeForm: FormGroup = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+    description: ['', [Validators.maxLength(500)]],
+    cookingTime: [null, [Validators.min(1), Validators.max(600)]],
     category: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
     mealCategory: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
     ingredients: this.fb.array<FormControl<string | null>>([this.fb.control('', Validators.required)]),
@@ -296,6 +298,10 @@ export class AddRecipePage {
 
     const payload = {
       title: this.recipeForm.value.title,
+      description: (this.recipeForm.value.description ?? '').trim(),
+      cookingTime: this.recipeForm.value.cookingTime
+        ? Number(this.recipeForm.value.cookingTime)
+        : null,
       category: this.recipeForm.value.category,
       mealCategory: this.recipeForm.value.mealCategory,
       ingredients: this.recipeForm.value.ingredients.filter(Boolean),
@@ -399,6 +405,8 @@ export class AddRecipePage {
 
     this.recipeForm.patchValue({
       title: recipe.title ?? '',
+      description: recipe.description ?? '',
+      cookingTime: recipe.cookingTime ?? null,
       category: recipe.category ?? '',
       mealCategory: recipe.mealCategory ?? '',
       spiceLevel: recipe.spiceLevel || 'Mild',
@@ -448,6 +456,8 @@ export class AddRecipePage {
 
     this.recipeForm.reset({
       title: '',
+      description: '',
+      cookingTime: null,
       category: '',
       mealCategory: '',
       spiceLevel: 'Mild',

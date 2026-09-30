@@ -24,6 +24,30 @@
           <input id="title" formControlName="title" placeholder="Recipe title" />
         </div>
 
+        <div class="field-row wide">
+          <label for="description">Description</label>
+          <textarea
+            id="description"
+            formControlName="description"
+            placeholder="A short description of the recipe"
+            maxlength="500"
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="field-row">
+          <label for="cookingTime">Cooking time (minutes)</label>
+          <input
+            id="cookingTime"
+            type="number"
+            formControlName="cookingTime"
+            min="1"
+            max="600"
+            step="1"
+            placeholder="e.g. 30"
+          />
+        </div>
+
         <div class="field-row">
           <label for="category">Cuisine</label>
           <select id="category" formControlName="category">

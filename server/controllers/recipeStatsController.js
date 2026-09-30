@@ -1,11 +1,134 @@
 const Recipe = require("../models/Recipe");
+const Review = require("../models/Review");
 
 const {
   mapRecipe,
   summarizeRating,
+  getUserId,
+  toObjectId,
 } = require("../utils/recipeHelpers");
 
 const TRENDING_WINDOW_DAYS = 14;
+
+// How many recipes the weekly trending strip shows.
+const TRENDING_LIMIT = 6;
+
+// Weeks run from Monday 00:00 in the server timezone to the following
+// Monday. Using the server clock keeps the range identical for every client
+// and avoids "my week starts on Sunday" differences between browsers.
+const getWeekStart = (date = new Date()) => {
+  const weekStart = new Date(date);
+
+  weekStart.setHours(0, 0, 0, 0);
+
+  const daysSinceMonday = (weekStart.getDay() + 6) % 7;
+
+  weekStart.setDate(weekStart.getDate() - daysSinceMonday);
+
+  return weekStart;
+};
+
+// GET /api/recipes/trending
+// Ranks recipes by the reviews they collected since the start of the current
+// week. Lifetime ratings are never used here, so a recipe that was popular
+// months ago cannot stay on the list.
+const getTrendingThisWeek = async (req, res, next) => {
+  try {
+    const weekStart = getWeekStart();
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const weeklyActivity = await Review.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: weekStart,
+            $lt: weekEnd,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$recipe",
+          reviewCount: { $sum: 1 },
+          averageRating: { $avg: "$rating" },
+          lastReviewAt: { $max: "$createdAt" },
+        },
+      },
+      {
+        $sort: {
+          reviewCount: -1,
+          averageRating: -1,
+          lastReviewAt: -1,
+        },
+      },
+      { $limit: TRENDING_LIMIT },
+      {
+        $lookup: {
+          from: "recipes",
+          localField: "_id",
+          foreignField: "_id",
+          as: "recipe",
+        },
+      },
+      // A review can outlive its recipe, so those entries are dropped here.
+      {
+        $unwind: {
+          path: "$recipe",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "recipe.user",
+          foreignField: "_id",
+          as: "owner",
+        },
+      },
+      {
+        $unwind: {
+          path: "$owner",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ]);
+
+    const userObjectId = toObjectId(getUserId(req));
+
+    const trending = weeklyActivity.map((entry) => {
+      const rating = summarizeRating(
+        entry.recipe,
+        userObjectId
+      );
+
+      return {
+        ...mapRecipe({
+          ...entry.recipe,
+          user: entry.owner ?? entry.recipe.user,
+          averageRating: rating.average,
+          ratingCount: rating.count,
+          myRating: rating.mine,
+        }),
+        weekly: {
+          reviews: entry.reviewCount,
+          averageRating:
+            Math.round(entry.averageRating * 10) / 10,
+          lastReviewAt: entry.lastReviewAt,
+        },
+      };
+    });
+
+    return res.status(200).json({
+      trending,
+      weekStart,
+      weekEnd,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 const getRecipeStats = async (req, res, next) => {
   try {
@@ -176,4 +299,5 @@ const getRecipeStats = async (req, res, next) => {
 
 module.exports = {
   getRecipeStats,
+  getTrendingThisWeek,
 };
