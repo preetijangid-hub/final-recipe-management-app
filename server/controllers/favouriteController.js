@@ -1,5 +1,6 @@
 const Favourite = require("../models/Favourite");
 const Recipe = require("../models/Recipe");
+const { notifyRecipeOwner } = require("../utils/notificationService");
 const {
   mapRecipe,
   summarizeRating,
@@ -76,6 +77,22 @@ const addFavourite = async (req, res, next) => {
       user: req.user._id,
       recipe: recipe._id,
     });
+
+    // A save is only stored once, so the owner gets a single notification.
+    // A failure here never breaks the favourite itself.
+    try {
+      await notifyRecipeOwner({
+        recipient: recipe.user,
+        actor: req.user._id,
+        recipe: recipe._id,
+        type: "save",
+      });
+    } catch (notificationError) {
+      console.error(
+        "Favourite notification error:",
+        notificationError.message
+      );
+    }
 
     return res.status(201).json({
       message: "Recipe added to favourites.",

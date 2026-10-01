@@ -1,3 +1,4 @@
+const http = require("http");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -14,6 +15,8 @@ const collectionRoutes = require("./routes/collectionRoutes");
 const publicCollectionRoutes = require("./routes/publicCollectionRoutes");
 const assistantRoutes = require("./routes/assistantRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const { initSocket } = require("./socket/socketServer");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 dotenv.config();
@@ -65,6 +68,7 @@ app.use("/api/collections", collectionRoutes);
 app.use("/api/public", publicCollectionRoutes);
 app.use("/api/assistant", assistantRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -77,8 +81,15 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
+// Socket.IO attaches to the same HTTP server Express listens on. It is only
+// started by the real entry point, so importing the app for tests never
+// opens a listening port.
+const server = http.createServer(app);
+
 if (require.main === module) {
-  app.listen(PORT, () => {
+  initSocket(server, { corsOrigin: allowedOrigins });
+
+  server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 }

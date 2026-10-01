@@ -5,11 +5,19 @@ import { Subscription } from 'rxjs';
 
 import { AuthService } from './services/auth';
 import { FavouritesService } from './services/favourites';
+import { NotificationService } from './services/notification';
+import { NotificationBell } from './components/notification-bell/notification-bell';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    CommonModule,
+    NotificationBell,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -17,6 +25,7 @@ export class App implements OnDestroy {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly favouritesService = inject(FavouritesService);
+  private readonly notificationService = inject(NotificationService);
 
   private readonly routerEventsSubscription = this.router.events.subscribe(
     () => {
@@ -47,6 +56,9 @@ export class App implements OnDestroy {
 
     // Drop the cached favourites so the next user starts fresh.
     this.favouritesService.reset();
+
+    // Close the notification socket and clear private notifications.
+    this.notificationService.reset();
 
     this.router.navigate(['/login']);
   }

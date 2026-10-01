@@ -1,0 +1,106 @@
+<div class="notification-bell">
+  <button
+    class="bell-button"
+    type="button"
+    [attr.aria-expanded]="isOpen"
+    aria-label="Notifications"
+    (click)="toggle()"
+  >
+    <svg
+      class="bell-icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M12 3a5 5 0 0 0-5 5v3.6l-1.6 2.7A1 1 0 0 0 6.2 16h11.6a1 1 0 0 0 .8-1.6L17 11.6V8a5 5 0 0 0-5-5Z"
+      />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </svg>
+
+    <span class="bell-badge" *ngIf="unreadCount() > 0">
+      {{ badgeLabel() }}
+    </span>
+  </button>
+
+  <div class="bell-panel" *ngIf="isOpen">
+    <div class="bell-panel-head">
+      <span class="bell-panel-title">Notifications</span>
+
+      <button
+        class="mark-all-button"
+        type="button"
+        *ngIf="unreadCount() > 0"
+        (click)="markAllAsRead()"
+      >
+        Mark all as read
+      </button>
+    </div>
+
+    <div class="bell-loading" *ngIf="loading()">
+      <div class="spinner"></div>
+      <span>Loading notifications...</span>
+    </div>
+
+    <div
+      class="bell-empty"
+      *ngIf="!loading() && notifications().length === 0"
+    >
+      <span class="bell-empty-icon">🔔</span>
+      <h4>You are all caught up</h4>
+      <p>New reviews and saves on your recipes will appear here.</p>
+    </div>
+
+    <ul class="bell-list" *ngIf="!loading() && notifications().length > 0">
+      <li
+        class="bell-item"
+        *ngFor="let notification of notifications()"
+        [class.unread]="!notification.read"
+        (click)="openNotification(notification)"
+      >
+        <span class="bell-item-dot" *ngIf="!notification.read"></span>
+
+        <div class="bell-item-body">
+          <p class="bell-item-message">{{ notification.message }}</p>
+
+          <span class="bell-item-recipe">
+            {{ notification.recipe.title }}
+          </span>
+
+          <span class="bell-item-time">
+            {{ relativeTime(notification.createdAt) }}
+          </span>
+        </div>
+      </li>
+    </ul>
+
+    <button class="bell-preference" type="button" (click)="toggleToasts()">
+      <span>Toast alerts</span>
+      <span class="bell-switch" [class.on]="toastsEnabled()">
+        {{ toastsEnabled() ? 'On' : 'Off' }}
+      </span>
+    </button>
+  </div>
+
+  <div
+    class="notification-toast"
+    *ngIf="toast() as alert"
+    (click)="openToast()"
+  >
+    <span class="toast-icon">🔔</span>
+
+    <div class="toast-body">
+      <p>{{ alert.message }}</p>
+      <span>{{ relativeTime(alert.createdAt) }}</span>
+    </div>
+
+    <button
+      class="toast-close"
+      type="button"
+      aria-label="Dismiss"
+      (click)="dismissToast($event)"
+    >
+      ×
+    </button>
+  </div>
+</div>

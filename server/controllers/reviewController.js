@@ -1,6 +1,7 @@
 const Recipe = require("../models/Recipe");
 const Review = require("../models/Review");
 const { toObjectId } = require("../utils/recipeHelpers");
+const { notifyRecipeOwner } = require("../utils/notificationService");
 
 // Aggregated rating summary for one recipe, computed on the Review
 // collection with an aggregation pipeline instead of on the frontend.
@@ -104,6 +105,22 @@ const createReview = async (req, res, next) => {
     await syncRecipeRating(recipe, user._id, rating);
 
     await review.populate("user", "name role");
+
+    // Let the recipe owner know, without interrupting the review if the
+    // notification could not be created.
+    try {
+      await notifyRecipeOwner({
+        recipient: recipe.user,
+        actor: user._id,
+        recipe: recipe._id,
+        type: "review",
+      });
+    } catch (notificationError) {
+      console.error(
+        "Review notification error:",
+        notificationError.message
+      );
+    }
 
     return res.status(201).json({
       message: "Review created successfully",
