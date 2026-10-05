@@ -14,6 +14,8 @@ import { MyCollectionsPage } from './pages/my-collections/my-collections';
 import { FavouritesPage } from './pages/favourites/favourites';
 import { SharedCollectionPage } from './pages/shared-collection/shared-collection';
 import { AddRecipePage } from './pages/add-recipe/add-recipe';
+import { MealPlannerPage } from './pages/meal-planner/meal-planner';
+import { ShoppingListPage } from './pages/shopping-list/shopping-list';
 
 import { authGuard, publicGuard } from './guards/auth-guard';
 
@@ -77,6 +79,18 @@ export const routes: Routes = [
   {
     path: 'add-recipe',
     component: AddRecipePage,
+    canActivate: [authGuard],
+  },
+
+  {
+    path: 'meal-planner',
+    component: MealPlannerPage,
+    canActivate: [authGuard],
+  },
+
+  {
+    path: 'shopping-list',
+    component: ShoppingListPage,
     canActivate: [authGuard],
   },
 

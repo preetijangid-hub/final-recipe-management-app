@@ -1,0 +1,59 @@
+<div class="shopping-list-page">
+  <header class="shopping-list-header">
+    <div>
+      <span class="eyebrow">SHOPPING LIST</span>
+      <h2>Weekly Shopping List</h2>
+    </div>
+
+    <div class="page-actions">
+      <button class="secondary-btn print-hidden" type="button" (click)="previousWeek()">Previous Week</button>
+      <button class="secondary-btn print-hidden" type="button" (click)="jumpToCurrentWeek()">This Week</button>
+      <button class="secondary-btn print-hidden" type="button" (click)="nextWeek()">Next Week</button>
+      <button class="primary-btn print-hidden" type="button" (click)="printPage()">Print</button>
+    </div>
+  </header>
+
+  <div class="alert error-alert" *ngIf="error">
+    <span>!</span>
+    {{ error }}
+  </div>
+
+  <div class="week-summary" *ngIf="shoppingList">
+    <span class="summary-label">Week of</span>
+    <strong>{{ shoppingList.weekStart }}</strong>
+    <span>to</span>
+    <strong>{{ shoppingList.weekStart }}</strong>
+  </div>
+
+  <div class="shopping-list-card">
+    <div class="shopping-list-toolbar print-hidden">
+      <button class="secondary-btn" type="button" routerLink="/meal-planner">Back to planner</button>
+      <button class="secondary-btn" type="button" (click)="refreshShoppingList()">Refresh</button>
+    </div>
+
+    <div class="list-state" *ngIf="loading">Loading your grocery list...</div>
+
+    <ng-container *ngIf="!loading">
+      <ul class="shopping-items" *ngIf="items.length; else emptyState">
+        <li class="shopping-item-row" *ngFor="let item of items">
+          <label class="shopping-item-toggle">
+            <input type="checkbox" [checked]="item.checked" (change)="toggleItem(item)" />
+            <span [class.checked]="item.checked" class="shopping-item-text">{{ formatIngredient(item) }}</span>
+          </label>
+
+          <div class="shopping-item-context" *ngIf="(item.usedIn ?? []).length">
+            <span class="used-in-label">Used in:</span>
+            <span>{{ (item.usedIn ?? []).join(', ') }}</span>
+          </div>
+        </li>
+      </ul>
+
+      <ng-template #emptyState>
+        <div class="empty-shopping-list">
+          <p>No ingredients are planned for this week yet.</p>
+          <button class="primary-btn" type="button" routerLink="/meal-planner">Add meals</button>
+        </div>
+      </ng-template>
+    </ng-container>
+  </div>
+</div>

@@ -1,0 +1,176 @@
+<div class="meal-planner-page">
+  <header class="meal-planner-header">
+    <div>
+      <span class="eyebrow">WEEKLY PLAN</span>
+      <h2>Meal Planner</h2>
+    </div>
+
+    <div class="week-controls">
+      <button
+        class="secondary-btn week-nav-btn print-hidden"
+        type="button"
+        [class.active]="activeWeekNavigation === 'previous'"
+        (click)="previousWeek()"
+      >
+        Previous Week
+      </button>
+      <button
+        class="secondary-btn week-nav-btn print-hidden"
+        type="button"
+        [class.active]="activeWeekNavigation === 'this'"
+        (click)="jumpToCurrentWeek()"
+      >
+        This Week
+      </button>
+      <button
+        class="secondary-btn week-nav-btn print-hidden"
+        type="button"
+        [class.active]="activeWeekNavigation === 'next'"
+        (click)="nextWeek()"
+      >
+        Next Week
+      </button>
+      <button class="secondary-btn print-hidden" type="button" (click)="printPage()">Print</button>
+    </div>
+  </header>
+
+  <div class="alert success-alert" *ngIf="success">
+    <span>✓</span>
+    {{ success }}
+  </div>
+
+  <div class="alert error-alert" *ngIf="error">
+    <span>!</span>
+    {{ error }}
+  </div>
+
+  <div class="week-summary" *ngIf="weekDays.length">
+    <span class="summary-label">Week of</span>
+    <strong>{{ weekDays[0].key }}</strong>
+    <span>to</span>
+    <strong>{{ weekDays[6].key }}</strong>
+  </div>
+
+  <div class="planner-layout">
+    <section class="planner-card">
+      <div class="week-grid" *ngIf="weekDays.length">
+        <div class="grid-corner">Meal</div>
+
+        <div class="day-header" *ngFor="let day of weekDays">
+          <span class="day-name">{{ day.dayName }}</span>
+          <strong>{{ day.label }}</strong>
+          <span class="today-pill" *ngIf="day.isToday">Today</span>
+        </div>
+
+        <ng-container *ngFor="let mealType of mealTypes">
+          <div class="meal-type-label">{{ mealType | titlecase }}</div>
+
+          <div class="slot" *ngFor="let day of weekDays">
+            <ng-container *ngIf="mealPlanMap[day.key + ':' + mealType] as entry; else emptySlot">
+              <div class="slot-cards">
+                <div class="slot-card" *ngFor="let recipe of getSlotRecipes(entry)">
+                  <div class="slot-card-image" *ngIf="recipe.image; else noImage">
+                    <img [src]="recipe.image" [alt]="recipe.title || 'Recipe image'" />
+                  </div>
+
+                  <ng-template #noImage>
+                    <div class="slot-card-image placeholder">
+                      <span>{{ recipe.title.slice(0, 1) || 'R' }}</span>
+                    </div>
+                  </ng-template>
+
+                  <div class="slot-card-body">
+                    <div class="slot-name-row">
+                      <h4>{{ recipe.title }}</h4>
+                    </div>
+
+                    <div class="slot-actions">
+                      <a class="view-link" [routerLink]="['/recipes', recipe._id]" *ngIf="recipe._id">View</a>
+                      <button type="button" class="text-button" (click)="startCookMode(recipe)">Cook mode</button>
+                      <button type="button" class="text-button text-button-danger" (click)="removeMeal(day.key, mealType, recipe._id)">Remove</button>
+                    </div>
+
+                    <div class="servings-row">
+                      <span>Servings</span>
+                      <div class="servings-controls">
+                        <button type="button" (click)="updateServings(day.key, mealType, recipe._id, -1)" aria-label="Decrease servings">−</button>
+                        <strong>{{ getRecipeServings(day.key, mealType, recipe._id) }}</strong>
+                        <button type="button" (click)="updateServings(day.key, mealType, recipe._id, 1)" aria-label="Increase servings">+</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <select class="slot-select" (change)="onRecipeSelected(day.key, mealType, $any($event.target).value)">
+                <option value="">Add recipe</option>
+                <option *ngFor="let recipe of availableRecipes" [value]="recipe._id" [disabled]="getSlotRecipes(entry).some((slotRecipe) => slotRecipe._id === recipe._id)">
+                  {{ recipe.title }}
+                </option>
+              </select>
+            </ng-container>
+
+            <ng-template #emptySlot>
+              <div class="empty-slot">
+                <span class="empty-title">No meal planned</span>
+                <select class="slot-select" (change)="onRecipeSelected(day.key, mealType, $any($event.target).value)">
+                  <option value="">Add recipe</option>
+                  <option *ngFor="let recipe of availableRecipes" [value]="recipe._id">
+                    {{ recipe.title }}
+                  </option>
+                </select>
+              </div>
+            </ng-template>
+          </div>
+        </ng-container>
+      </div>
+    </section>
+
+    <aside class="shopping-card">
+      <div class="shopping-header">
+        <h3>Shopping List</h3>
+        <a class="text-link" routerLink="/shopping-list">Open full list</a>
+        <span>{{ getShoppingList().length }} items</span>
+      </div>
+
+      <ul class="shopping-list" *ngIf="getShoppingList().length; else emptyShopping">
+        <li *ngFor="let item of getShoppingList()">
+          <label class="shopping-item">
+            <input type="checkbox" [checked]="item.checked" (change)="toggleShoppingItem(item.name)" />
+            <span [class.checked]="item.checked">{{ item.name }}</span>
+          </label>
+        </li>
+      </ul>
+
+      <ng-template #emptyShopping>
+        <p class="empty-shopping">Add a few recipes to build your shopping list.</p>
+      </ng-template>
+    </aside>
+  </div>
+
+  <section class="cook-mode-panel" *ngIf="cookModeRecipe && cookModeSteps.length">
+    <div class="cook-mode-header">
+      <div>
+        <span class="eyebrow">COOK MODE</span>
+        <h3>{{ cookModeRecipe.title }}</h3>
+      </div>
+      <button class="secondary-btn print-hidden" type="button" (click)="stopCookMode()">Stop</button>
+    </div>
+
+    <div class="cook-mode-progress">
+      <div class="cook-mode-progress-bar" [style.width.%]="cookModeProgress"></div>
+    </div>
+
+    <div class="cook-mode-step-wrap">
+      <p class="cook-mode-step-label">Step {{ cookModeCurrentIndex + 1 }} of {{ cookModeSteps.length }}</p>
+      <p class="cook-mode-step active">{{ cookModeStep }}</p>
+    </div>
+
+    <div class="cook-mode-controls print-hidden">
+      <button class="secondary-btn" type="button" (click)="previousCookStep()" [disabled]="cookModeCurrentIndex === 0">Previous</button>
+      <button class="primary-btn" type="button" (click)="cookModeIsPaused ? resumeCookMode() : pauseCookMode()">{{ cookModeIsPaused ? 'Resume' : 'Pause' }}</button>
+      <button class="secondary-btn" type="button" (click)="startCookMode(cookModeRecipe)">Restart</button>
+      <button class="secondary-btn" type="button" (click)="nextCookStep()">Next</button>
+    </div>
+  </section>
+</div>
