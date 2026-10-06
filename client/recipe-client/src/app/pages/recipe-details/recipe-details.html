@@ -153,7 +153,20 @@
           </p>
 
           <div class="recipe-author">
-            <span class="author-label">By {{ getAuthorName() }}</span>
+            <a
+              class="author-link"
+              *ngIf="getOwnerId(); else genericAuthor"
+              [routerLink]="['/creators', getOwnerId()]"
+            >
+              <span class="author-label">By {{ getAuthorName() }}</span>
+              <span class="author-profession" *ngIf="getAuthorProfession()">
+                {{ getAuthorProfession() }}
+              </span>
+            </a>
+
+            <ng-template #genericAuthor>
+              <span class="author-label">By {{ getAuthorName() }}</span>
+            </ng-template>
           </div>
 
           <div class="recipe-stats">

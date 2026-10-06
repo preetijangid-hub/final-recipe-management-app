@@ -56,7 +56,12 @@ describe('RecipeDetails', () => {
                   steps: [],
                   category: 'Italian',
                   mealCategory: 'Dinner',
-                  user: 'owner-id',
+                  user: {
+                    _id: 'owner-id',
+                    name: 'Priya Chef',
+                    email: 'priya@example.com',
+                    profession: 'Chef',
+                  },
                 },
               });
             },
@@ -104,6 +109,28 @@ describe('RecipeDetails', () => {
     expect(fixture.componentInstance.recipe?._id).toBe(
       '65b123456789012345678902'
     );
+
+    fixture.destroy();
+  });
+
+  it('shows the creator name linked to the public creator profile', () => {
+    const fixture = TestBed.createComponent(RecipeDetails);
+    fixture.detectChanges();
+
+    routeParams.next(convertToParamMap({ id: '65a123456789012345678901' }));
+    fixture.detectChanges();
+
+    const link = (
+      fixture.nativeElement as HTMLElement
+    ).querySelector('.recipe-author a.author-link') as HTMLAnchorElement;
+
+    expect(link).not.toBeNull();
+    expect(link.textContent).toContain('Priya Chef');
+    expect(link.getAttribute('href')).toBe('/creators/owner-id');
+
+    const profession = link.querySelector('.author-profession');
+
+    expect(profession?.textContent).toContain('Chef');
 
     fixture.destroy();
   });

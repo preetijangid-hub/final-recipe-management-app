@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import {
   ActivatedRoute,
   Router,
+  RouterLink,
 } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -35,7 +36,7 @@ import { SimilarRecipes } from './similar-recipes';
 @Component({
   selector: 'app-recipe-details',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, ReviewSection, SimilarRecipes],
+  imports: [CommonModule, MatButtonModule, RouterLink, ReviewSection, SimilarRecipes],
   templateUrl: './recipe-details.html',
   styleUrl: './recipe-details.css',
 })
@@ -146,6 +147,16 @@ export class RecipeDetails implements OnInit {
     }
 
     return this.recipe.user.name || this.recipe.user.email || 'Savoré Kitchen';
+  }
+
+  getAuthorProfession(): string {
+    const owner = this.recipe?.user;
+
+    if (!owner || typeof owner === 'string') {
+      return '';
+    }
+
+    return owner.profession ?? '';
   }
 
   isOwner(): boolean {

@@ -458,3 +458,22 @@
     padding: 35px 25px;
   }
 }
+
+.recipe-author .author-link {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.recipe-author .author-link:hover .author-label {
+  color: #a36d25;
+}
+
+.recipe-author .author-profession {
+  color: #8a7a66;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}

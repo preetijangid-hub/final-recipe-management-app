@@ -16,6 +16,8 @@ import { SharedCollectionPage } from './pages/shared-collection/shared-collectio
 import { AddRecipePage } from './pages/add-recipe/add-recipe';
 import { MealPlannerPage } from './pages/meal-planner/meal-planner';
 import { ShoppingListPage } from './pages/shopping-list/shopping-list';
+import { ProfilePage } from './pages/profile/profile';
+import { CreatorProfilePage } from './pages/creator-profile/creator-profile';
 
 import { authGuard, publicGuard } from './guards/auth-guard';
 
@@ -107,6 +109,12 @@ export const routes: Routes = [
   },
 
   {
+    path: 'profile',
+    component: ProfilePage,
+    canActivate: [authGuard],
+  },
+
+  {
     path: 'assistant',
     component: AssistantPage,
     canActivate: [authGuard],
@@ -116,6 +124,13 @@ export const routes: Routes = [
     path: 'recipes/:id',
     component: RecipeDetails,
     canActivate: [authGuard],
+  },
+
+  {
+    // Public creator page, opened from a recipe's creator link. It has no
+    // auth guard on purpose so anyone can browse a creator without logging in.
+    path: 'creators/:userId',
+    component: CreatorProfilePage,
   },
 
   {

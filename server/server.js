@@ -18,6 +18,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const mealPlanRoutes = require("./routes/mealPlanRoutes");
 const shoppingListRoutes = require("./routes/shoppingListRoutes");
+const profileRoutes = require("./routes/profileRoutes");
 const { initSocket } = require("./socket/socketServer");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
@@ -73,6 +74,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/meal-plans", mealPlanRoutes);
 app.use("/api/shopping-lists", shoppingListRoutes);
+app.use("/api/profiles", profileRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({

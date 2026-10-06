@@ -45,6 +45,9 @@ export interface Recipe {
     name: string;
     email: string;
     role?: 'user' | 'admin';
+    // Public creator fields used by the recipe details creator link.
+    profession?: string;
+    profilePhoto?: string;
   };
   orderCount?: number;
   rating?: RatingSummary;

@@ -9,3 +9,39 @@ export interface User {
   createdAt?: string;
   updatedAt?: string;
 }
+
+/**
+ * Creator profile as returned by /api/profiles/me. The photo is a URL
+ * string; an empty string means the user has no photo yet.
+ */
+export interface UserProfile {
+  _id: string;
+  name: string;
+  email: string;
+  profession: string;
+  profilePhoto: string;
+}
+
+export interface ProfileResponse {
+  profile: UserProfile;
+}
+
+export interface ProfileUpdateResponse {
+  message: string;
+  profile: UserProfile;
+}
+
+/**
+ * Safe public creator fields served by GET /api/profiles/:userId.
+ * Nothing private (email, role, password) is ever returned there.
+ */
+export interface PublicCreatorProfile {
+  _id: string;
+  name: string;
+  profession: string;
+  profilePhoto: string;
+}
+
+export interface PublicProfileResponse {
+  profile: PublicCreatorProfile;
+}

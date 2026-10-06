@@ -144,7 +144,9 @@ const getRecipeById = async (req, res, next) => {
       req.params.id
     ).populate(
       "user",
-      "name email role"
+      // profession and profilePhoto are public creator fields, also
+      // served by the public profile endpoint.
+      "name email role profession profilePhoto"
     );
 
     if (!recipe) {

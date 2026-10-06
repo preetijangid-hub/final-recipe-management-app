@@ -1,0 +1,86 @@
+<section class="creator-page">
+  <div class="page-header">
+    <div>
+      <span class="section-kicker">SAVORÉ CREATOR</span>
+      <h1>{{ profile?.name || 'Creator' }}</h1>
+    </div>
+  </div>
+
+  <section class="creator-shell">
+    <div class="creator-loading" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Loading creator profile...</p>
+    </div>
+
+    <div class="creator-error" *ngIf="!loading && profileError">
+      <span class="state-icon">!</span>
+      <p>{{ profileError }}</p>
+    </div>
+
+    <ng-container *ngIf="!loading && !profileError && profile">
+      <header class="creator-card">
+        <div class="creator-photo">
+          <img
+            *ngIf="profile.profilePhoto"
+            [src]="profile.profilePhoto"
+            [alt]="profile.name"
+          />
+          <span *ngIf="!profile.profilePhoto" class="photo-placeholder">
+            {{ profileInitial }}
+          </span>
+        </div>
+
+        <div class="creator-info">
+          <h2>{{ profile.name }}</h2>
+          <p class="creator-profession" *ngIf="profile.profession">
+            {{ profile.profession }}
+          </p>
+        </div>
+      </header>
+
+      <section class="creator-recipes">
+        <h3>Recipes by {{ profile.name }}</h3>
+
+        <div class="recipes-loading" *ngIf="recipesLoading">
+          <div class="spinner"></div>
+          <p>Loading recipes...</p>
+        </div>
+
+        <div class="recipes-error" *ngIf="!recipesLoading && recipesError">
+          <p>{{ recipesError }}</p>
+          <button
+            class="secondary-button"
+            type="button"
+            (click)="loadRecipes(profile._id)"
+          >
+            Retry
+          </button>
+        </div>
+
+        <div
+          class="empty-state"
+          *ngIf="!recipesLoading && !recipesError && recipes.length === 0"
+        >
+          <p>This creator has not published any recipes yet.</p>
+        </div>
+
+        <div class="recipe-grid" *ngIf="!recipesLoading && !recipesError && recipes.length > 0">
+          <a
+            class="recipe-card"
+            *ngFor="let recipe of recipes"
+            [routerLink]="['/recipes', recipe._id]"
+          >
+            <div class="card-image">
+              <img *ngIf="recipe.image" [src]="recipe.image" [alt]="recipe.title" />
+              <span *ngIf="!recipe.image" class="card-placeholder">✦</span>
+            </div>
+            <h4>{{ recipe.title }}</h4>
+            <p class="card-meta" *ngIf="recipe.mealCategory">
+              {{ recipe.mealCategory }}
+            </p>
+          </a>
+        </div>
+      </section>
+    </ng-container>
+  </section>
+</section>

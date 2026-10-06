@@ -1,0 +1,123 @@
+<section class="profile-page">
+  <div class="page-header">
+    <div>
+      <span class="section-kicker">SAVORÉ CREATOR PROFILE</span>
+      <h1>Creator Profile</h1>
+    </div>
+  </div>
+
+  <section class="profile-shell">
+    <div class="profile-loading" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Loading your profile...</p>
+    </div>
+
+    <div class="profile-error" *ngIf="!loading && errorMessage && !profile">
+      <span class="state-icon">!</span>
+      <p>{{ errorMessage }}</p>
+      <button class="primary-button small-button" type="button" (click)="loadProfile()">Retry</button>
+    </div>
+
+    <form
+      class="profile-form"
+      *ngIf="!loading && profile"
+      [formGroup]="profileForm"
+      (ngSubmit)="save()"
+    >
+      <div class="profile-layout">
+        <div class="photo-column">
+          <div class="photo-preview">
+            <img
+              *ngIf="photoPreview"
+              [src]="photoPreview"
+              alt="Profile photo preview"
+            />
+            <span *ngIf="!photoPreview" class="photo-placeholder">
+              {{ profileInitial }}
+            </span>
+          </div>
+
+          <button
+            class="secondary-button"
+            type="button"
+            (click)="clearPhoto()"
+            [disabled]="!photoPreview"
+          >
+            Clear Photo
+          </button>
+        </div>
+
+        <section class="form-grid">
+          <div class="field-row wide">
+            <label for="name">Name</label>
+            <!-- Shown for reference only; renaming is handled elsewhere. -->
+            <input id="name" type="text" [value]="profile.name" readonly />
+          </div>
+
+          <div class="field-row wide">
+            <label for="profession">Profession</label>
+            <input
+              id="profession"
+              type="text"
+              formControlName="profession"
+              placeholder="Chef, Home Cook, Food Blogger..."
+              maxlength="100"
+            />
+
+            @if (
+              profileForm.controls.profession.invalid &&
+              profileForm.controls.profession.touched
+            ) {
+              <small class="field-error">
+                Profession must be 100 characters or fewer.
+              </small>
+            }
+          </div>
+
+          <div class="field-row wide">
+            <label for="profilePhoto">Profile photo URL</label>
+            <input
+              id="profilePhoto"
+              type="url"
+              formControlName="profilePhoto"
+              placeholder="https://example.com/your-photo.jpg"
+              maxlength="500"
+            />
+
+            @if (
+              profileForm.controls.profilePhoto.invalid &&
+              profileForm.controls.profilePhoto.touched
+            ) {
+              <small class="field-error">
+                @if (profileForm.controls.profilePhoto.errors?.['maxlength']) {
+                  Profile photo URL must be 500 characters or fewer.
+                } @else {
+                  Please enter a valid http(s) image URL.
+                }
+              </small>
+            }
+          </div>
+        </section>
+      </div>
+
+      @if (errorMessage && profile) {
+        <div class="server-error">{{ errorMessage }}</div>
+      }
+
+      <div class="form-actions">
+        <span class="save-message" *ngIf="successMessage">{{ successMessage }}</span>
+        <button
+          class="primary-button"
+          type="submit"
+          [disabled]="profileForm.invalid || saving"
+        >
+          @if (saving) {
+            <span>Saving...</span>
+          } @else {
+            <span>Save Changes</span>
+          }
+        </button>
+      </div>
+    </form>
+  </section>
+</section>

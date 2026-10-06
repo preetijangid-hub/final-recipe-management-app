@@ -23,6 +23,21 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    // Creator profile fields. The photo is a URL string only, matching how
+    // recipe images and collection covers are stored. Real upload UI comes
+    // in a later phase.
+    profilePhoto: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: "",
+    },
+    profession: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      default: "",
+    },
     preferences: {
       allergies: {
         type: [String],
