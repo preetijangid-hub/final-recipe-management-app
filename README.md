@@ -383,6 +383,42 @@ npm test
 
 ![Food Assistant](docs/screenshots/assistant.png)
 
+
+### Edit Recipe
+
+![Edit Recipe](docs/screenshots/editrecipe.png)
+
+### Favourites
+
+![Favourites](docs/screenshots/favourites.png)
+
+### Creator Profile
+
+![Creator Profile](docs/screenshots/creatorprofile.png)
+
+### Meal Planner
+
+![Meal Planner](docs/screenshots/mealplanner.png)
+
+### Shopping List
+
+![Shopping List](docs/screenshots/shoppinglist.png)
+
+### Ratings & Reviews
+
+![Ratings & Reviews](docs/screenshots/ratings-reviews.png)
+
+### Notifications
+
+![Notifications](docs/screenshots/notification.png)
+
+### Shared Collection
+
+![Shared Collection](docs/screenshots/sharedcollection.png)
+
+### Food Assistant
+
+![Food Assistant](docs/screenshots/foodassistant.png)
 ---
 
 ## 🔐 Security
@@ -455,3 +491,32 @@ Savoré was developed as a full-stack application to demonstrate practical exper
 * Testing
 * Responsive UI development
 * Full-stack deployment
+
+## 🧪 Testing
+
+### Frontend
+- 23 test files
+- 219 tests passed
+- Angular unit/component tests
+
+### Backend
+- 13 test suites
+- 114 tests passed
+- Jest + Supertest
+- In-memory MongoDB for API testing
+
+## ⚙️ GitHub Actions CI
+
+The project uses GitHub Actions to automatically:
+
+- Run backend tests
+- Run frontend tests
+- Build the Angular frontend
+- Verify the project before deployment
+
+All CI checks are passing successfully.
+
+## 🎥 Demo Video
+
+A 3–5 minute demonstration video showcasing the application's features,
+testing, and deployment will be added here.
