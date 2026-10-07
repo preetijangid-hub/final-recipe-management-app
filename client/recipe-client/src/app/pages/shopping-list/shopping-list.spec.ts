@@ -70,6 +70,7 @@ describe('ShoppingListPage', () => {
   it('keeps recipe context for aggregated ingredients', () => {
     component.shoppingList = {
       _id: 'list-1',
+      user: 'user-1',
       weekStart: '2026-10-05',
       items: [{
         name: 'Tomatoes',

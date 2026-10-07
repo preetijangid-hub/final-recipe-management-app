@@ -127,17 +127,23 @@ describe('MealPlannerPage', () => {
   });
 
   it('appends a new recipe to a slot without duplicating an existing one', () => {
-    component.mealPlans = [
-      {
-        _id: 'entry-2',
-        date: '2026-10-05',
-        mealType: 'breakfast',
-        servings: 2,
-        recipes: [sampleRecipe],
-        recipe: sampleRecipe,
-      },
-    ];
-    component.syncMealPlanMap();
+    mealPlanServiceMock.getWeekPlan.mockReturnValue(
+      of({
+        mealPlans: [
+          {
+            _id: 'entry-2',
+            date: '2026-10-05',
+            mealType: 'breakfast',
+            servings: 2,
+            recipes: [sampleRecipe],
+            recipe: sampleRecipe,
+          },
+        ],
+      })
+    );
+    component.jumpToCurrentWeek();
+
+    expect(component.getDateForCell('2026-10-05', 'breakfast')?.recipes).toHaveLength(1);
 
     component.onRecipeSelected('2026-10-05', 'breakfast', secondRecipe._id);
 
@@ -151,17 +157,21 @@ describe('MealPlannerPage', () => {
   });
 
   it('removes only one recipe from a slot while keeping the rest', () => {
-    component.mealPlans = [
-      {
-        _id: 'entry-3',
-        date: '2026-10-05',
-        mealType: 'breakfast',
-        servings: 2,
-        recipes: [sampleRecipe, secondRecipe],
-        recipe: sampleRecipe,
-      },
-    ];
-    component.syncMealPlanMap();
+    mealPlanServiceMock.getWeekPlan.mockReturnValue(
+      of({
+        mealPlans: [
+          {
+            _id: 'entry-3',
+            date: '2026-10-05',
+            mealType: 'breakfast',
+            servings: 2,
+            recipes: [sampleRecipe, secondRecipe],
+            recipe: sampleRecipe,
+          },
+        ],
+      })
+    );
+    component.jumpToCurrentWeek();
 
     component.removeMeal('2026-10-05', 'breakfast', sampleRecipe._id);
 
